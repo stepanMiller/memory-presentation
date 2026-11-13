@@ -1,0 +1,11 @@
+3D cortical surface: fsaverage5, distributed with Nilearn 0.10.4 and derived from the FreeSurfer standard surface.
+Source: https://github.com/nilearn/nilearn/tree/0.10.4/nilearn/datasets/data/fsaverage5
+Files: pial_left.gii.gz and pial_right.gii.gz.
+Reference: Fischl B, Sereno MI, Tootell RBH, Dale AM. High-resolution intersubject averaging and a coordinate system for the cortical surface. Human Brain Mapping 8(4), 272-284 (1999).
+
+MODIFIED DISTRIBUTION: GIFTI arrays have been decoded into a compact binary file. Each hemisphere contains 10242 Float32 xyz vertices followed by 20480 Int32 triangle triplets, little-endian. No patient scan or identifying data was added. Presentation-specific coordinate transform, vertex colors and lighting are applied at runtime. This is an average cortical surface, not a complete or patient-specific brain. No functional connectivity or diagnostic inference is supplied by the source mesh.
+
+All or portions of this licensed product (such portions are the "Software") have been obtained under license from The General Hospital Corporation "MGH" and are subject to the terms and conditions in FREESURFER-LICENSE.txt, supplied in this directory.
+
+Three.js 0.187.0: MIT License, supplied in ../vendor/LICENSE. https://github.com/mrdoob/three.js
+Additional vessel, nerve and memory overlays are original educational schematic geometry. They are not anatomical segmentation or measured human connectivity.

@@ -15,6 +15,8 @@ jobs:
           node-version: '22'
       - run: npm run build
       - run: npm run check
+      - name: Check V2 anatomical demonstrations
+        run: npm run check:v2
       - name: Install browser test runner
         run: npm install --no-save --package-lock=false playwright@1.62.1
       - run: npx playwright install --with-deps chromium

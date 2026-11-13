@@ -1,0 +1,11 @@
+import {cp,mkdir,rm,readFile,writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {fileURLToPath} from 'node:url';
+const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..');
+await rm(path.join(root,'dist'),{recursive:true,force:true});
+await mkdir(path.join(root,'dist'),{recursive:true});
+for(const p of ['index.html','style.css','app.js','anatomy.js','software-renderer.js','media.js','assets','models','vendor'])await cp(path.join(root,'v2',p),path.join(root,'dist',p),{recursive:true});
+const source=await readFile(path.join(root,'v2/index.html'),'utf8');
+if(/autoplay|setInterval/.test(source))throw Error('Autoplay is prohibited');
+await writeFile(path.join(root,'dist/robots.txt'),'User-agent: *\nDisallow: /\n');
+console.log('Built V2: three manual anatomical demonstrations. V1 source remains unchanged.');
