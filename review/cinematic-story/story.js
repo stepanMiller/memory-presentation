@@ -71,6 +71,10 @@ function build(ep){
  return model;
 }
 const models=EPISODES.map(build);
+// Avoid scroll anchoring to the source footer while scenes are inserted above it.
+const initialTarget=document.getElementById(location.hash.slice(1))||models[0].section;
+initialTarget.scrollIntoView({behavior:'instant',block:'start'});
+document.documentElement.classList.add('is-ready');
 let active=null,raf=0,lastStamp=null,continuous=false,autoTarget=null,dialogPaused=false;
 function sync(m){
  const b=m.q('.play');b.disabled=m.done||reduced.matches||!m.ready;
@@ -183,7 +187,7 @@ $('autoplay').onchange=()=>{continuous=$('autoplay').checked&&!reduced.matches;$
 $('autoplay').disabled=reduced.matches;
 CHAPTERS.forEach((title,i)=>{const m=models.find(m=>m.ep.chapter===i),a=document.createElement('a');a.href='#episode-'+m.ep.id;a.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span>${escapeHTML(title)}`;a.onclick=()=>{disableContinuous();$('contents').close();};$('chapter-links').append(a);});
 $('medical-link').onclick=()=>{disableContinuous();$('contents').close();};
-$('start-film').onclick=()=>{if(reduced.matches){models[1].section.scrollIntoView({behavior:'auto'});return;}continuous=true;$('autoplay').checked=true;autoTarget=2;models[1].section.scrollIntoView({behavior:'smooth',block:'start'});};
+$('start-film').onclick=()=>{if(reduced.matches){models[1].section.scrollIntoView({behavior:'auto'});return;}models.slice(1).forEach(m=>{m.time=0;m.done=false;m.paused=false;m.forceComparison=null;m.step=-1;render(m,true);sync(m);});continuous=true;$('autoplay').checked=true;autoTarget=2;models[1].section.scrollIntoView({behavior:'smooth',block:'start'});};
 // Internal history/hash links preserve each episode's time rather than reversing physiology.
 document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{if(a.id!=='start-film')disableContinuous();}));
 // A minimal read-only QA surface for deterministic state inspection.
