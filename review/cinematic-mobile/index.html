@@ -1,0 +1,80 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#241a15"><meta name="robots" content="noindex,nofollow"><title>Память. Понять, что меняется — Cinema Review</title><style>
+:root{--paper:#f4eee5;--ink:#fff8ec;--sage:#bdd0aa;--gold:#e8cda4;--quiet:#e8d6c2;--dark:#241a15}
+*{box-sizing:border-box}html{scroll-snap-type:y mandatory;scroll-behavior:smooth;background:var(--dark);color:var(--ink)}body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;-webkit-font-smoothing:antialiased}a{color:inherit}
+.frame{position:relative;isolation:isolate;height:100svh;height:100dvh;min-height:470px;overflow:hidden;scroll-snap-align:start;scroll-snap-stop:always;background:#815b49}
+.backdrop,.visual,.shade,.fx{position:absolute;inset:0}
+.backdrop{background-size:cover;background-position:center;transform:scale(1.13);filter:blur(26px) saturate(.9);opacity:.7}
+.visual{width:100%;height:100%;object-fit:cover;object-position:center;z-index:0;transform:scale(1.045);transition:transform 7s cubic-bezier(.14,.48,.28,1)}
+.frame.is-active .visual{transform:scale(1.005)}
+.shade{z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(27,18,15,.67),rgba(27,18,15,.22) 48%,transparent 75%),linear-gradient(180deg,rgba(20,15,13,.49),transparent 45%,rgba(23,15,11,.78) 98%)}
+.top{position:absolute;z-index:4;left:max(32px,env(safe-area-inset-left));right:max(32px,env(safe-area-inset-right));top:max(28px,env(safe-area-inset-top));display:flex;align-items:center;justify-content:space-between;gap:22px;color:#fff9ed}
+.brand{font-family:Georgia,"Times New Roman",serif;font-size:22px;letter-spacing:-.035em;white-space:nowrap}.brand span{font:600 10px/1.3 Arial,sans-serif;letter-spacing:.18em;color:#e6d1bb;margin-left:14px;text-transform:uppercase}
+.counter{font-size:11px;letter-spacing:.14em;color:#fff0df;white-space:nowrap;font-variant-numeric:tabular-nums}
+.copy{position:absolute;z-index:4;left:max(7vw,32px);right:30%;top:20%;max-width:650px;opacity:0;transform:translate3d(0,25px,0);transition:opacity .75s ease,transform .85s cubic-bezier(.21,.67,.24,1);text-shadow:0 2px 22px #1f130f73}
+.frame.is-active .copy{opacity:1;transform:translate3d(0,0,0)}
+.kicker{font-size:11px;font-weight:650;text-transform:uppercase;letter-spacing:.18em;color:var(--sage);margin:0 0 22px}
+.copy h2{font:400 clamp(44px,5.5vw,91px)/1.01 Georgia,"Times New Roman",serif;letter-spacing:-.043em;max-width:10.4ch;margin:0 0 24px;text-wrap:balance}
+.copy .description{font-size:clamp(16px,1.35vw,21px);line-height:1.45;color:#fff8ed;max-width:27ch;margin:0}
+.endcap{position:absolute;bottom:max(30px,env(safe-area-inset-bottom));left:max(32px,env(safe-area-inset-left));right:max(32px,env(safe-area-inset-right));z-index:5;display:flex;align-items:end;justify-content:space-between;gap:18px}
+.note{max-width:35ch;font-size:11px;line-height:1.4;color:#eddcc9;opacity:.88;margin:0}
+.next-hint{font-size:10px;line-height:1.7;letter-spacing:.15em;white-space:nowrap;color:#f7e4cc;text-align:right;text-transform:uppercase}.next-hint b{font-weight:400;font-size:22px;display:block}
+.progress{position:absolute;left:0;right:0;bottom:0;z-index:10;height:3px;background:#ffffff30}.progress span{display:block;height:100%;background:linear-gradient(90deg,#c9c89a,#efd7af);width:var(--progress,0)}
+.fx{z-index:3;pointer-events:none;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .75s ease}.frame.is-active .fx{opacity:1}
+.fx path{stroke:#fff7d2;fill:none;stroke-width:3;stroke-linecap:round;stroke-dasharray:12 16;opacity:.8}
+.fx .beam{stroke-dasharray:180 250;stroke-dashoffset:300;stroke-width:4;animation:dash 4.3s ease-in-out infinite}
+.fx .pulse{fill:#fff1bc;stroke:#ffe3a4;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:pulse 2.3s ease-in-out infinite}
+.fx .path-light{filter:drop-shadow(0 0 9px #ffe5b7)}
+.frame:not(.is-active) .fx *{animation-play-state:paused!important}
+@keyframes dash{to{stroke-dashoffset:-500}}@keyframes pulse{0%,100%{opacity:.25;transform:scale(.8)}50%{opacity:.9;transform:scale(1.3)}}
+.reading-note{position:absolute;z-index:6;right:3.5vw;top:50%;padding:10px 13px;color:#fff3df;font-size:12px;background:#30241c8a;border:1px solid #f1dbb633;max-width:190px;line-height:1.45;backdrop-filter:blur(10px)}
+.reading-note:empty{display:none}
+.footer-document{background:#f4eee5;color:#342e27;padding:50px 6% 55px;scroll-snap-align:end;min-height:40vh}.footer-document h2{font:400 34px/1.1 Georgia,serif;margin:0 0 18px}.footer-document p{max-width:820px;font-size:15px;line-height:1.6}.footer-document summary{cursor:pointer;min-height:44px;padding:12px 0}.footer-document details{max-width:820px;border-top:1px solid #c9baa9}.footer-document a{color:#526044}
+@media (max-width:700px){
+ .frame{min-height:520px}.top{top:max(17px,env(safe-area-inset-top));left:20px;right:20px}.brand{font-size:19px}.brand span{display:none}.counter{font-size:10px}
+ .backdrop{transform:scale(1.3)}
+ .visual{height:74%;width:155%;left:-27%;top:15%;object-fit:contain;object-position:center;transform:scale(1.08);filter:drop-shadow(0 14px 40px #452b237a)}
+ .frame.is-active .visual{transform:scale(1.02)}
+ .shade{background:linear-gradient(180deg,rgba(25,17,13,.86),rgba(25,17,13,.44) 25%,rgba(34,20,14,.04) 50%,rgba(24,16,13,.55) 80%,rgba(24,16,13,.90))}
+ .copy{top:12%;left:22px;right:20px;max-width:100%;transform:translate3d(0,17px,0)}
+ .kicker{font-size:10px;margin-bottom:12px;color:#e6d6b7}
+ .copy h2{font-size:clamp(34px,9vw,49px);line-height:1.04;letter-spacing:-.037em;margin-bottom:12px;max-width:12.5ch}
+ .copy .description{font-size:15px;line-height:1.4;max-width:31ch;color:#fff6e6}
+ .reading-note{right:15px;top:auto;bottom:17%;font-size:11px;max-width:125px;padding:7px 9px}
+ .endcap{left:22px;right:20px;bottom:max(25px,env(safe-area-inset-bottom));align-items:end}
+ .note{font-size:10px;max-width:27ch;line-height:1.4}.next-hint{font-size:8px}.next-hint b{font-size:18px}
+ .fx{height:74%;top:15%;width:155%;left:-27%;}
+ .footer-document{padding:36px 23px 60px}.footer-document h2{font-size:30px}
+}
+@media (max-width:360px){.copy h2{font-size:32px}.copy .description{font-size:14px}.note{max-width:21ch}}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.copy{opacity:1;transform:none;transition:none}.visual{transform:none!important;transition:none}.fx *{animation:none!important}.fx{opacity:1!important;transition:none}}
+</style></head><body><main id="cinema"></main><footer class="footer-document"><h2>Понять механизм. Обсудить причину.</h2><p>Все иллюстрации служат для общего объяснения процессов. Они не являются обследованиями конкретного пациента и не устанавливают диагноз. Факт дефицита B12, сосудистого нарушения и выбор лекарственного лечения определяет врач.</p><details><summary>Медицинские оговорки и источники</summary><p>Условные подсветки не отображают точную карту нейронных путей, клеточного кровотока или проведения сигнала. Пары артериол и миелина представляют отдельные учебные сравнения, а не лечение или восстановление. Медицинская редактура и окончательные формулировки требуют согласования с Юлией Олеговной.</p><p><a href="https://ods.od.nih.gov/factsheets/VitaminB12-HealthProfessional/">NIH: витамин B12</a> · <a href="https://www.nia.nih.gov/health/memory-loss-and-forgetfulness/memory-problems-forgetfulness-and-aging">NIA: изменения памяти</a></p></details></footer><script>
+const SCENES=[{"chapter":"Человек и память","title":"Во сколько мы договорились?","description":"Завтра встреча. Но время приходится уточнить.","asset":"man","mode":"portrait","note":"Собирательный образ мужчины 50+","index":1},{"chapter":"Как работает память","title":"Мозг слышит слова","description":"«Завтра в десять, у входа в парк». Сначала мы воспринимаем информацию.","asset":"brain","mode":"hear","note":"Условная визуализация, не карта нейронных путей","index":2},{"chapter":"Как работает память","title":"Внимание выделяет главное","description":"Время и место становятся важными деталями встречи.","asset":"cutaway","mode":"attention","note":"Условное выделение участков мозга","index":3},{"chapter":"Как работает память","title":"Детали связываются","description":"Мозг объединяет новое с уже знакомой информацией.","asset":"cutaway","mode":"encode","note":"Условная схема взаимосвязей","index":4},{"chapter":"Как работает память","title":"Подсказка помогает вспомнить","description":"«Во сколько встречаемся?» Знакомый вопрос помогает восстановить договорённость.","asset":"cutaway","mode":"recall","note":"Это пример, не тест памяти","index":5},{"chapter":"Кровоснабжение","title":"Мозгу нужен кислород","description":"Для работы нервных клеток необходим постоянный приток крови.","asset":"brain","mode":"brainSupply","note":"Общая учебная иллюстрация","index":6},{"chapter":"Кровоснабжение","title":"Сосуды становятся всё мельче","description":"Кровь проходит по разветвлениям до капилляров рядом с клетками.","asset":"brain","mode":"network","note":"Разветвления показаны условно","index":7},{"chapter":"Кровоснабжение","title":"Кислород поступает в ткань","description":"Из капилляра кислород переходит к окружающим клеткам мозга.","asset":"micro","mode":"oxygen","note":"Светлые точки условно обозначают кислород","index":8},{"chapter":"Микроциркуляция","title":"Кровь идёт по просвету сосуда","description":"Перед нами отдельная учебная модель маленькой артерии.","asset":"artery","mode":"smallVessel","note":"Артериола, исходный вид","index":9},{"chapter":"Микроциркуляция","title":"Сосудистая стенка может меняться","description":"В одном из возможных случаев стенка утолщается, а просвет становится уже.","asset":"artery_change","mode":"narrow","note":"Сравнение двух учебных состояний","index":10},{"chapter":"Микроциркуляция","title":"Это может затрагивать нервные связи","description":"Нарушения мелких сосудов иногда влияют на соседнюю ткань мозга.","asset":"artery_change","mode":"tissue","note":"Не диагноз и не снимок пациента","index":11},{"chapter":"Нервные волокна","title":"Миелин окружает волокно","description":"Оболочка состоит из участков вокруг аксона, по которому идёт сигнал.","asset":"nerve","mode":"structure","note":"Общая учебная модель","index":12},{"chapter":"Нервные волокна","title":"Миелин помогает передавать сигнал","description":"Он способствует быстрому проведению импульса по нервному волокну.","asset":"nerve","mode":"signal","note":"Светлая метка обозначает передачу сигнала","index":13},{"chapter":"Нервные волокна","title":"При дефиците B12 нервы могут страдать","description":"Подтверждённый дефицит B12 может сопровождаться неврологическими нарушениями.","asset":"nerve_change","mode":"deficiency","note":"Не означает, что дефицит есть у пациента","index":14},{"chapter":"Главная мысль","title":"Похожие жалобы, разные причины","description":"Сосудистые и другие факторы могут сочетаться.","asset":"brain","mode":"overview","note":"Причина определяется индивидуально","index":15},{"chapter":"Ваш опыт важен","title":"Ранее препарат помогал по ощущениям","description":"Это важное наблюдение, которое стоит обсудить с врачом.","asset":"man","mode":"portrait","note":"Не рекомендация возобновлять препарат","index":16},{"chapter":"Следующий шаг","title":"Разобраться вместе с врачом","description":"Понять возможные причины и выбрать дальнейшие действия вместе.","asset":"man","mode":"portrait","note":"Образовательная история, не диагноз","index":17}];
+const SOURCES={"man":"../../v2/assets/man-50.webp","brain":"../mechanisms/assets/brain-surface.webp","cutaway":"../mechanisms/assets/brain-cutaway.webp","micro":"../vascular/assets/microvascular.webp","artery":"../mechanisms/assets/arteriole-normal.webp","artery_change":"../mechanisms/assets/arteriole-changed.webp","nerve":"../mechanisms/assets/nerve-normal.webp","nerve_change":"../mechanisms/assets/nerve-changed.webp"};
+const site=document.getElementById('cinema');
+const escapeHTML=t=>String(t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function fxMarkup(mode){
+  // Effects are schematic visual cues, not an anatomical or diagnostic map.
+  if(['hear','attention','encode','recall'].includes(mode)) return '<svg class="fx" viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="beam path-light" d="M660 447 Q825 270 1050 295 T1360 510"/><circle class="pulse" cx="1050" cy="295" r="13"/></svg>';
+  if(['brainSupply','network'].includes(mode)) return '<svg class="fx" viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="beam path-light" d="M800 700 Q930 550 1020 420 T1240 220"/><circle class="pulse" cx="1020" cy="420" r="16"/></svg>';
+  if(mode==='oxygen') return '<svg class="fx" viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="beam path-light" d="M755 470 Q940 510 1120 450 T1370 450"/><path class="beam path-light" d="M870 490 Q980 620 1160 720"/><circle class="pulse" cx="1160" cy="720" r="14"/></svg>';
+  if(['smallVessel','narrow','tissue'].includes(mode))return '<svg class="fx" viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="beam path-light" d="M350 750 Q600 600 925 465 T1300 245"/><circle class="pulse" cx="1000" cy="440" r="15"/></svg>';
+  if(['structure','signal','deficiency'].includes(mode))return '<svg class="fx" viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid meet" aria-hidden="true"><path class="beam path-light" d="M180 780 Q600 600 950 425 T1490 185"/><circle class="pulse" cx="930" cy="438" r="14"/></svg>';
+  return '';
+}
+SCENES.forEach((s,i)=>{
+ const section=document.createElement('section');section.className='frame';section.id='frame-'+(i+1);section.setAttribute('aria-label',`${i+1} из ${SCENES.length}: ${s.title}`);
+ const image=SOURCES[s.asset];
+ section.innerHTML=`<div class="backdrop" style="background-image:url('${image}')" aria-hidden="true"></div>
+ <img class="visual" src="${image}" alt="${escapeHTML(s.title)}" decoding="async" ${i<2?'fetchpriority="high"':'loading="lazy"'}>
+ ${fxMarkup(s.mode)}<div class="shade" aria-hidden="true"></div>
+ <div class="top"><div class="brand">Память <span>Что происходит внутри</span></div><span class="counter">${String(i+1).padStart(2,'0')} / ${SCENES.length}</span></div>
+ <div class="copy"><p class="kicker">${escapeHTML(s.chapter)}</p><h2>${escapeHTML(s.title)}</h2><p class="description">${escapeHTML(s.description)}</p></div>
+ <div class="endcap"><p class="note">${escapeHTML(s.note)}</p><span class="next-hint">${i===SCENES.length-1?'Конец истории':'Листайте'}<b>${i===SCENES.length-1?'✓':'↓'}</b></span></div>
+ <div class="progress"><span style="--progress:${((i+1)/SCENES.length)*100}%"></span></div>`;
+ site.append(section);
+});
+const obs=new IntersectionObserver(entries=>{
+  for(const x of entries)x.target.classList.toggle('is-active',x.isIntersecting && x.intersectionRatio>0.46);
+},{threshold:[0,.46,.62,1]});
+document.querySelectorAll('.frame').forEach(f=>obs.observe(f));
+</script></body></html>

@@ -1,5 +1,5 @@
 import {spawnSync} from 'node:child_process';
-import {cp,mkdtemp,rm} from 'node:fs/promises';
+import {cp,mkdtemp,rm,mkdir} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {fileURLToPath} from 'node:url';
@@ -14,5 +14,8 @@ try{
  run('scripts/build-v2.mjs');
  await cp(archive,path.join(root,'dist/v1'),{recursive:true});
  await cp(path.join(root,'review'),path.join(root,'dist/review'),{recursive:true,filter:source=>!source.endsWith('.md')});
+ // Keep the approved male portrait at its source-relative path for the cinematic review.
+ await mkdir(path.join(root,'dist/v2/assets'),{recursive:true});
+ await cp(path.join(root,'v2/assets/man-50.webp'),path.join(root,'dist/v2/assets/man-50.webp'));
  console.log('GitHub Pages build ready: V2 at /; preserved V1 at /v1/.');
 }finally{await rm(archive,{recursive:true,force:true});}
