@@ -13,6 +13,8 @@
     "build:v2": "node scripts/build-v2.mjs",
     "check:v2": "node scripts/check-v2.mjs",
     "qa:v2": "node scripts/prepare-v2-qa.mjs",
+    "build:scroll": "node scroll-review/build.mjs",
+    "preview:scroll": "node scroll-review/preview.mjs",
     "build:pages": "node scripts/build-pages.mjs"
   },
   "engines": {
