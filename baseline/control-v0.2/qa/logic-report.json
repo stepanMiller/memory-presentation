@@ -1,0 +1,17 @@
+{
+  "status": "passed",
+  "type": "logic only; no visual or browser validation",
+  "checks": [
+    "initial state",
+    "manual vessel network",
+    "separate artery model with persistent context and explicit caption",
+    "play pause resume end",
+    "motion off instant transition",
+    "system reduced motion",
+    "keyboard navigation",
+    "direct jump pauses at marked brain area",
+    "vertical gestures and pinch do not switch scenes; horizontal swipe works",
+    "hidden document stops motion",
+    "no data transmission or storage"
+  ]
+}

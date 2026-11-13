@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "date": "2026-11-13",
+  "scope": "one HTML control scene, not published",
+  "assets": {
+    "brain.webp": {
+      "bytes": 198070,
+      "sha256": "f020be541b934bea4f753cc4af0e069edf66c822451e2560e615257fac6e36e5"
+    },
+    "artery.webp": {
+      "bytes": 146288,
+      "sha256": "9ae74c2afc88f362bb74e1a83cc015d24dfd5585c78444b4d43d8eb9517af044"
+    }
+  },
+  "standalone_bytes": 754708,
+  "browser_qa": "revision 0.2 blocked: Chromium socket Operation not permitted; native desktop input unavailable",
+  "logic_qa": "11 behavioral checks passed",
+  "prior_user_qa": "revision 0.1 accepted after user Chromium desktop/mobile review"
+}

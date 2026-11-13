@@ -1,0 +1,10 @@
+{
+  "name": "memory-control-scene",
+  "version": "0.2.0",
+  "private": true,
+  "description": "One control scene; accepted visual direction with three targeted revisions",
+  "scripts": {
+    "check": "node --check src/app.js && node qa/logic.cjs",
+    "build": "node build.mjs"
+  }
+}

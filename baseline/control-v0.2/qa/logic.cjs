@@ -1,0 +1,27 @@
+// Logic-only tests. This small DOM harness does not render CSS and is not browser QA.
+const vm=require('vm'),fs=require('fs'),path=require('path'),assert=require('assert');
+const html=fs.readFileSync(path.join(__dirname,'../src/index.html'),'utf8');
+const code=fs.readFileSync(path.join(__dirname,'../src/app.js'),'utf8');
+function harness(reduced=false){
+ let now=0,next=1;const queue=new Map(),nodes=new Map(),matches=new Map();
+ class El{constructor(id){this.id=id;this.style={};this.dataset={};this.attrs={};this.events={};this.disabled=false;this.classList={set:new Set(),add:(...v)=>v.forEach(x=>this.classList.set.add(x)),toggle:(v,on)=>on?this.classList.set.add(v):this.classList.set.delete(v)};}setAttribute(k,v){this.attrs[k]=v}getAttribute(k){return this.attrs[k]}addEventListener(k,v){this.events[k]=v}focus(){this.focused=true}click(){if(!this.disabled)this.events.click?.({target:this})}}
+ for(const id of [...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]))nodes.set(id,new El(id));
+ const tabs=[0,1,2].map(i=>nodes.get('step-'+i));
+ const document={getElementById:id=>{assert(nodes.has(id),'Missing HTML node: '+id);return nodes.get(id)},querySelectorAll:s=>s==='.step-tab'?tabs:[],events:{},hidden:false,addEventListener(k,f){this.events[k]=f}};
+ const window={matchMedia:q=>{if(!matches.has(q))matches.set(q,{matches:q.includes('reduced')?reduced:true,addEventListener(){}});return matches.get(q)}};
+ const ctx={document,window,performance:{now:()=>now},requestAnimationFrame:f=>{const id=next++;queue.set(id,f);return id},cancelAnimationFrame:id=>queue.delete(id),console};
+ vm.runInNewContext(code,ctx);
+ return {nodes,tabs,document,queue,advance(ms){for(let t=0;t<ms;t+=16){now+=16;const frame=[...queue];queue.clear();frame.forEach(([,f])=>f(now))}},get:id=>nodes.get(id)};
+}
+const checks=[];let h=harness();assert.equal(h.get('experience').dataset.step,'0');checks.push('initial state');
+h.tabs[1].click();h.advance(2000);assert.equal(h.get('experience').dataset.step,'1');assert.equal(h.get('brain-layer').style.opacity,'1');assert.equal(h.get('artery-layer').style.opacity,'0');checks.push('manual vessel network');
+h.tabs[2].click();for(let i=0;i<150;i++){h.advance(16);assert(!(Number(h.get('brain-layer').style.opacity)>.01&&Number(h.get('artery-layer').style.opacity)>.01),'Different anatomy must not crossfade into one structure');if(Number(h.get('artery-layer').style.opacity)>.01)assert.equal(h.get('context-bridge').style.opacity,'1','Model must retain the brain area context');}assert.equal(h.get('artery-layer').style.opacity,'1');assert.equal(h.get('brain-layer').style.opacity,'0');assert(h.get('scale-note').textContent.includes('не точный разрез'));assert.equal(h.get('play-text').textContent,'Повторить переход');checks.push('separate artery model with persistent context and explicit caption');
+h.get('play').click();h.advance(3200);assert(h.queue.size>0);h.get('play').click();const paused=h.get('brain-layer').style.transform;h.advance(500);assert.equal(h.get('brain-layer').style.transform,paused);h.get('play').click();h.advance(16);const resumed=h.get('brain-layer').style.transform;assert.notEqual(resumed,paused);h.advance(16000);assert.equal(h.get('experience').dataset.step,'2');assert.equal(h.get('artery-layer').style.opacity,'1');assert.equal(h.queue.size,0);checks.push('play pause resume end');
+h.get('motion').click();h.tabs[0].click();assert.equal(h.get('brain-layer').style.opacity,'1');assert.equal(h.queue.size,0);assert.equal(h.get('play').disabled,true);checks.push('motion off instant transition');
+h=harness(true);h.tabs[2].click();assert.equal(h.get('artery-layer').style.opacity,'1');assert.equal(h.queue.size,0);checks.push('system reduced motion');
+h=harness();h.tabs[0].events.keydown({key:'ArrowRight',preventDefault(){}});h.advance(2000);assert.equal(h.get('experience').dataset.step,'1');assert.equal(h.tabs[1].focused,true);assert.equal(h.tabs[1].getAttribute('aria-pressed'),'true');checks.push('keyboard navigation');
+h=harness();h.tabs[2].click();h.advance(2000);assert.equal(h.get('experience').dataset.step,'1');assert.equal(h.get('brain-layer').style.opacity,'1');assert.equal(h.get('artery-layer').style.opacity,'0');h.advance(2600);assert.equal(h.get('experience').dataset.step,'2');checks.push('direct jump pauses at marked brain area');
+h=harness();const gesture=(dx,dy,extra={})=>{const target={closest:()=>null};h.get('anatomy').events.pointerdown({pointerId:1,button:0,isPrimary:true,clientX:200,clientY:200,target,...extra});h.get('anatomy').events.pointerup({pointerId:1,clientX:200+dx,clientY:200+dy});h.advance(2000);};gesture(-20,-140);assert.equal(h.get('experience').dataset.step,'0');gesture(-100,-5);assert.equal(h.get('experience').dataset.step,'1');gesture(-100,0,{isPrimary:false});assert.equal(h.get('experience').dataset.step,'1');checks.push('vertical gestures and pinch do not switch scenes; horizontal swipe works');
+h=harness();h.get('play').click();h.advance(3000);h.document.hidden=true;h.document.events.visibilitychange();assert.equal(h.queue.size,0);checks.push('hidden document stops motion');
+assert(!/(fetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|WebSocket)/.test(code));checks.push('no data transmission or storage');
+const report={status:'passed',type:'logic only; no visual or browser validation',checks};fs.writeFileSync(path.join(__dirname,'logic-report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report,null,2));

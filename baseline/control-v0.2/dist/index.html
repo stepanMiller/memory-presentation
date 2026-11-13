@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f3f1eb">
+  <meta name="color-scheme" content="light">
+  <meta name="memory-control-version" content="0.2.0">
+  <title>Память. Понять, что меняется</title>
+  <meta name="description" content="Как сосуды поддерживают работу памяти. Интерактивная учебная иллюстрация.">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="experience" id="experience" data-step="0">
+  <header class="masthead">
+    <a class="wordmark" href="#main-title" aria-label="Память. К началу экрана">Память<span>Понять, что меняется</span></a>
+    <button class="motion-switch" id="motion" aria-pressed="false" aria-label="Выключить анимацию" title="Выключить анимацию"><span class="motion-icon" aria-hidden="true">≈</span><span id="motion-text">Движение</span><span class="switch-dot" aria-hidden="true"></span></button>
+  </header>
+
+  <section class="intro" aria-labelledby="main-title">
+    <p class="eyebrow"><span></span>Кровоснабжение мозга</p>
+    <h1 id="main-title">Как сосуды <br>поддерживают<br><em>работу памяти</em></h1>
+    <p class="lead">За каждым воспоминанием стоит работа мозга. Ей необходим постоянный приток крови.</p>
+  </section>
+
+  <figure class="anatomy" id="anatomy" aria-label="Учебная анатомическая иллюстрация мозга и кровоснабжения" tabindex="0">
+    <div class="image-stage">
+      <div class="brain-layer" id="brain-layer">
+        <img id="brain-image" class="anatomy-image" src="assets/brain.webp" alt="Объёмная учебная иллюстрация мозга: извилины, поверхностные сосуды, мозжечок и открытый участок белого вещества." width="1536" height="1024" fetchpriority="high" draggable="false">
+        <svg class="vascular-focus" id="vascular-focus" viewBox="0 0 1536 1024" aria-hidden="true">
+          <defs><radialGradient id="focus-wash"><stop offset="0" stop-color="#f9f1dc" stop-opacity=".05"/><stop offset=".72" stop-color="#f9f1dc" stop-opacity="0"/><stop offset="1" stop-color="#f3f1eb" stop-opacity=".18"/></radialGradient></defs>
+          <ellipse cx="540" cy="545" rx="172" ry="166" fill="url(#focus-wash)" stroke="#655a4a" stroke-opacity=".26" stroke-width="1.5" stroke-dasharray="3 7"/>
+          <circle cx="540" cy="545" r="7" fill="#f3f1eb" stroke="#794644" stroke-width="2"/>
+          <path d="M540 545 L345 690 L215 690" fill="none" stroke="#6b6b58" stroke-opacity=".7" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div class="artery-layer" id="artery-layer" aria-hidden="true">
+        <img class="anatomy-image" src="assets/artery.webp" alt="Увеличенная учебная иллюстрация здоровой артерии в разрезе. В открытом просвете видны эритроциты, по краям различимы слои стенки." width="1536" height="1024" draggable="false">
+        <svg class="flow-overlay" viewBox="0 0 1536 1024" aria-hidden="true">
+          <defs><linearGradient id="flow-tone"><stop stop-color="#f8e8cf" stop-opacity="0"/><stop offset=".5" stop-color="#f8e8cf" stop-opacity=".65"/><stop offset="1" stop-color="#f8e8cf" stop-opacity="0"/></linearGradient></defs>
+          <path class="flow-track" d="M350 745 C590 568 800 444 1130 304" fill="none" stroke="url(#flow-tone)" stroke-width="2" stroke-dasharray="54 900"/>
+        </svg>
+      </div>
+      <div class="anatomy-vignette" aria-hidden="true"></div>
+      <div class="view-meta" aria-hidden="true"><span id="view-label">Общий вид</span><span class="view-line"></span><span id="view-scale">01 / 03</span></div>
+      <div class="context-bridge" id="context-bridge" aria-hidden="true">
+        <div class="context-image">
+          <img src="assets/brain.webp" width="1536" height="1024" alt="" draggable="false">
+          <svg viewBox="0 0 1536 1024" aria-hidden="true"><ellipse cx="540" cy="545" rx="172" ry="166" fill="none" stroke="#58684f" stroke-width="13"/></svg>
+        </div>
+        <span>Область примера</span>
+      </div>
+    </div>
+    <figcaption class="figure-caption">
+      <div class="figure-actions">
+        <span class="anatomy-tag" id="anatomy-tag" aria-hidden="true"><span class="tag-dot"></span><span id="tag-text">Сосудистая сеть</span></span>
+        <button class="explore" id="explore" aria-label="Приблизить сосудистую сеть"><span aria-hidden="true">+</span><span id="explore-text">Рассмотреть сосуды</span></button>
+      </div>
+      <p class="scale-note" id="scale-note">Общая учебная иллюстрация</p>
+    </figcaption>
+  </figure>
+
+  <section class="explanation" aria-labelledby="detail-title" aria-live="polite" aria-atomic="true">
+    <p class="detail-index" id="detail-index">01 <span>/</span> Мозг</p>
+    <h2 id="detail-title">Память требует энергии</h2>
+    <p id="detail-copy">Кровь доставляет кислород и питательные вещества, необходимые для работы нервных клеток.</p>
+  </section>
+
+  <nav class="controls" aria-label="Управление анатомической сценой">
+    <div class="step-tabs" role="group" aria-label="Этапы просмотра">
+      <button class="step-tab" id="step-0" aria-pressed="true" data-target="0"><span>01</span>Мозг</button>
+      <button class="step-tab" id="step-1" aria-pressed="false" data-target="1"><span>02</span>Сосуды</button>
+      <button class="step-tab" id="step-2" aria-pressed="false" data-target="2"><span>03</span>Внутри сосуда</button>
+    </div>
+    <div class="transport">
+      <button class="play-button" id="play" aria-label="Начать последовательный просмотр"><svg id="play-icon" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 3.5 12 8 5 12.5Z" fill="currentColor"/></svg><span id="play-text">Смотреть переход</span></button>
+      <div class="progress" aria-hidden="true"><span id="progress-fill"></span></div>
+      <div class="arrows"><button id="previous" class="arrow" disabled aria-label="Предыдущий масштаб">←</button><button id="next" class="arrow" aria-label="Следующий масштаб">→</button></div>
+    </div>
+  </nav>
+  <footer class="footer"><p>Учебная визуализация.<br class="mobile-break"> Не МРТ и не данные пациента.</p><span>Понять устройство</span></footer>
+  <noscript><p class="no-script">Кровь поступает к мозгу по артериям и далее по более мелким сосудам. Кислород и питательные вещества поддерживают работу нервных клеток. Здесь показано общее устройство, без оценки состояния конкретного человека.</p></noscript>
+</main>
+<script src="app.js"></script>
+</body>
+</html>

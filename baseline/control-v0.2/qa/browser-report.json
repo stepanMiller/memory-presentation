@@ -1,0 +1,13 @@
+{
+  "status": "blocked",
+  "revision": "0.2.0",
+  "attempts": [
+    "Chromium launch failed: socket() Operation not permitted",
+    "Native desktop could not accept text: no focused application window"
+  ],
+  "rendered_cases": 0,
+  "not_tested": [
+    "desktop/mobile rendered layout",
+    "actual iPhone"
+  ]
+}
