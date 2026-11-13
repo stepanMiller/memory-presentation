@@ -1,0 +1,33 @@
+name: Build and verify
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build
+      - run: npm run check
+      - name: Install browser test runner
+        run: npm install --no-save --package-lock=false playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - name: Browser checks
+        run: |
+          npm run preview > /tmp/memory-preview.log 2>&1 &
+          node --input-type=module -e 'let ready=false;for(let i=0;i<50;i++){try{const r=await fetch("http://127.0.0.1:4173");if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,200));}if(!ready)throw Error("Preview server did not become ready");'
+          npm run test:browser
+      - uses: actions/upload-artifact@v4
+        with:
+          name: memory-review
+          path: |
+            dist/
+            output/Memory_Presentation_Review.html
+            test-results/
+          retention-days: 14

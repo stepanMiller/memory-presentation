@@ -1,0 +1,51 @@
+{
+  "type": "runtime",
+  "checks": [
+    {
+      "name": "Static mode disables automatic playback",
+      "passed": true
+    },
+    {
+      "name": "Static mode changes state without animation",
+      "passed": true
+    },
+    {
+      "name": "Guided playback starts",
+      "passed": true
+    },
+    {
+      "name": "Pause holds playback time",
+      "passed": true
+    },
+    {
+      "name": "Manual wheel pauses guide",
+      "passed": true
+    },
+    {
+      "name": "Contents opens",
+      "passed": true
+    },
+    {
+      "name": "Contents closes",
+      "passed": true
+    },
+    {
+      "name": "Local playback and pause",
+      "passed": true,
+      "observed": {
+        "elapsed": 1524.8999999992548,
+        "afterPause": 1524.8999999992548
+      }
+    },
+    {
+      "name": "Separate model retains context",
+      "passed": true
+    },
+    {
+      "name": "Keyboard Home returns to brain",
+      "passed": true
+    }
+  ],
+  "passed": 10,
+  "total": 10
+}

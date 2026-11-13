@@ -1,0 +1,28 @@
+# INACTIVE TEMPLATE. Activate only after medical, visual and publication approval.
+name: Publish approved Memory release
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: memory-production
+  cancel-in-progress: false
+jobs:
+  publish:
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm run build && npm run check
+      - name: Upload static files to the approved bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.YC_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.YC_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ru-central1
+          YC_BUCKET: ${{ vars.YC_BUCKET }}
+        run: |
+          test -n "$YC_BUCKET"
+          aws --endpoint-url=https://storage.yandexcloud.net s3 cp dist/ "s3://$YC_BUCKET/" --recursive --cache-control "no-cache"

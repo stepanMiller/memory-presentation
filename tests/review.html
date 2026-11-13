@@ -1,0 +1,44 @@
+<!doctype html><html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Память · локальная проверка</title><style>
+*{box-sizing:border-box}body{margin:0;background:#deded8;color:#30382f;font:14px system-ui}header{padding:10px 18px;display:flex;align-items:center;flex-wrap:wrap;gap:12px;background:#faf9f5;position:relative;z-index:10}button,select{font:inherit;min-height:36px}#stage{margin:20px auto;position:relative}iframe{display:block;border:0;box-shadow:0 3px 22px #0002;transform-origin:top left}#report{white-space:pre-wrap;background:#fff;padding:16px;font:12px monospace;margin:20px;max-height:400px;overflow:auto}#status{font-size:12px}label{display:flex;gap:6px;align-items:center}</style>
+<header><label>Экран <select id="size"><option>320×568</option><option>360×640</option><option>375×667</option><option selected>390×844</option><option>430×932</option><option>768×1024</option><option>1024×768</option><option>1440×900</option><option>1920×1080</option></select></label><label>Сцена <select id="scene"></select></label><label>Этап <select id="step"><option value="0">1</option><option value="1">2</option><option value="2">3</option><option value="3">4</option></select></label><button id="fit">Вся сцена</button><button id="run">Проверить 9 размеров</button><button id="runtime">Проверить управление</button><span id="status">Локальный просмотр</span></header>
+<div id="stage"><iframe title="Предпросмотр истории" src="index.html"></iframe></div><pre id="report">Проверка ещё не запущена.</pre>
+<script src="layout-check.js"></script><script>
+const frame=document.querySelector('iframe'),size=document.querySelector('#size'),scene=document.querySelector('#scene'),step=document.querySelector('#step'),stage=document.querySelector('#stage'),status=document.querySelector('#status');
+let whole=false;
+const next=()=>new Promise(r=>setTimeout(r,40));
+function viewport(){const [width,height]=size.value.split('×').map(Number);frame.width=width;frame.height=height;const scale=Math.min(1,(innerWidth-40)/width);frame.style.transform=`scale(${scale})`;stage.style.width=width*scale+'px';stage.style.height=height*scale+'px';}
+async function show(){viewport();await next();const d=frame.contentDocument,w=frame.contentWindow,chapters=[...d.querySelectorAll('.chapter')],c=chapters[Number(scene.value)||0];if(d.querySelector('#motion').getAttribute('aria-pressed')==='false')d.querySelector('#motion').click();const buttons=c.querySelectorAll('.step-tab');buttons[Math.min(Number(step.value),buttons.length-1)].click();c.scrollIntoView({behavior:'instant',block:'start'});await next();if(whole){const scale=Math.min(1,(innerWidth-40)/Number(frame.width));frame.height=Math.ceil(c.getBoundingClientRect().height+64);await next();frame.height=Math.ceil(c.getBoundingClientRect().height+64);stage.style.height=Number(frame.height)*scale+'px';c.scrollIntoView({behavior:'instant',block:'start'});}status.textContent=`${size.value} · сцена ${Number(scene.value)+1} · этап ${Math.min(Number(step.value),buttons.length-1)+1}`;}
+frame.onload=()=>{const chapters=[...frame.contentDocument.querySelectorAll('.chapter')];scene.innerHTML=chapters.map((c,i)=>`<option value="${i}">${i+1}. ${c.querySelector('.eyebrow').textContent.slice(2)}</option>`).join('');show();};
+size.onchange=show;scene.onchange=show;step.onchange=show;document.querySelector('#fit').onclick=()=>{whole=!whole;show();};
+document.querySelector('#run').onclick=async()=>{
+ document.querySelector('#run').disabled=true;whole=false;const results=[];
+ for(const option of size.options){size.value=option.value;viewport();await next();const d=frame.contentDocument,w=frame.contentWindow;if(d.querySelector('#motion').getAttribute('aria-pressed')==='false')d.querySelector('#motion').click();
+  const chapters=[...d.querySelectorAll('.chapter')];
+  for(const [i,c]of chapters.entries()){for(const [j,b]of [...c.querySelectorAll('.step-tab')].entries()){b.click();await next();const failures=auditMemoryLayout(w);results.push({viewport:option.value,scene:i+1,step:j+1,failures});status.textContent=`Проверено ${results.length}/216`;}}
+ }
+ const failures=results.filter(r=>r.failures.length);const report={engine:navigator.userAgent,method:'Real CSS iframe viewports, not device emulation',checked:results.length,passed:results.length-failures.length,failed:failures.length,failures};
+ document.querySelector('#report').textContent=JSON.stringify(report,null,2);document.querySelector('#run').disabled=false;size.value='390×844';scene.value='0';step.value='0';show();
+};
+document.querySelector('#runtime').onclick=async()=>{
+ const report=[],d=frame.contentDocument,w=frame.contentWindow,wait=ms=>new Promise(r=>setTimeout(r,ms));
+ const check=(name,ok)=>report.push({name,passed:Boolean(ok)});
+ const motion=d.querySelector('#motion'),guide=d.querySelector('#guide'),first=d.querySelector('.chapter');
+ if(motion.getAttribute('aria-pressed')==='false')motion.click();
+ check('Static mode disables automatic playback',guide.disabled);
+ first.querySelector('.step-tab').click();first.querySelector('.local-play').click();
+ check('Static mode changes state without animation',first.dataset.step==='1');
+ motion.click();guide.click();await wait(500);
+ check('Guided playback starts',w.MemoryPresentation.state.guide.active&&w.MemoryPresentation.state.guide.elapsed>0);
+ guide.click();const elapsed=w.MemoryPresentation.state.guide.elapsed;await wait(350);
+ check('Pause holds playback time',w.MemoryPresentation.state.guide.elapsed===elapsed&&!w.MemoryPresentation.state.guide.active);
+ guide.click();w.dispatchEvent(new WheelEvent('wheel',{deltaY:100}));
+ check('Manual wheel pauses guide',!w.MemoryPresentation.state.guide.active);
+ d.querySelector('#menu-open').click();check('Contents opens',d.querySelector('dialog').open);d.querySelector('#menu-close').click();await wait(100);check('Contents closes',!d.querySelector('dialog').open&&!d.body.classList.contains('dialog-open'));
+ first.scrollIntoView({behavior:'instant',block:'start'});await wait(100);first.querySelector('.replay').click();first.querySelector('.local-play').click();await wait(1500);first.querySelector('.local-play').click();const local=w.MemoryPresentation.state.scenes[0].elapsed;await wait(200);
+ check('Local playback and pause',local>0&&w.MemoryPresentation.state.scenes[0].elapsed===local);report[report.length-1].observed={elapsed:local,afterPause:w.MemoryPresentation.state.scenes[0].elapsed};
+ motion.click();const vascular=d.querySelector('#blood-supply');vascular.querySelectorAll('.step-tab')[2].click();
+ check('Separate model retains context',vascular.dataset.step==='2'&&w.getComputedStyle(vascular.querySelector('.context-bridge')).opacity==='1');
+ const fig=vascular.querySelector('.anatomy');fig.dispatchEvent(new KeyboardEvent('keydown',{key:'Home',bubbles:true,cancelable:true}));check('Keyboard Home returns to brain',vascular.dataset.step==='0');
+ document.querySelector('#report').textContent=JSON.stringify({type:'runtime',checks:report,passed:report.filter(x=>x.passed).length,total:report.length},null,2);status.textContent='Проверка управления завершена';
+};
+</script></html>
