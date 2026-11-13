@@ -10,7 +10,11 @@ function createChapter(chapter) {
   section.dataset.beat = '0';
   section.innerHTML = `
     <div class="scroll-panel" aria-hidden="true">
-      <div class="scene-header"><p class="chapter-name"></p><p class="beat-copy"></p></div>
+      <div class="scene-header">
+        <p class="chapter-name"></p>
+        <p class="beat-copy"></p>
+        <p class="beat-explanation"></p>
+      </div>
       <div class="viewport"></div>
       <div class="scene-foot"><p class="scene-note"></p></div>
       <div class="progress"><div></div></div>
@@ -22,6 +26,7 @@ function createChapter(chapter) {
   const panel = section.querySelector('.scroll-panel');
   const distance = section.querySelector('.scroll-distance');
   const text = section.querySelector('.beat-copy');
+  const explanation = section.querySelector('.beat-explanation');
   const note = section.querySelector('.scene-note');
   const progress = section.querySelector('.progress > div');
   const transcript = section.querySelector('.static-story');
@@ -31,10 +36,16 @@ function createChapter(chapter) {
   const figures = chapter.beats.map(beat => {
     const figure = document.createElement('figure');
     const caption = document.createElement('figcaption');
-    const line = document.createElement('span');
+    const line = document.createElement('h3');
     line.className = 'beat-copy';
-    line.textContent = beat.copy;
-    caption.append(line);
+    line.textContent = beat.title;
+    const context = document.createElement('p');
+    context.className = 'beat-explanation';
+    context.textContent = beat.explanation;
+    const description = document.createElement('p');
+    description.className = 'visually-hidden';
+    description.textContent = beat.alt;
+    caption.append(line, context, description);
     if (beat.cue || beat.tag || beat.note) {
       const extra = document.createElement('span');
       extra.className = 'scene-note';
@@ -117,9 +128,7 @@ function createChapter(chapter) {
     const selected = visuals[main].img.complete && visuals[main].img.naturalWidth > 0 ? main : index;
     if (active !== selected) {
       active = selected;
-      section.dataset.beat = String(selected);
-      text.textContent = chapter.beats[selected].copy;
-      note.textContent = chapter.beats[selected].note || defaultNote;
+      updateCaption(selected);
     }
     progress.style.transform = `scaleX(${position / visuals.length})`;
   }
@@ -127,13 +136,21 @@ function createChapter(chapter) {
   for (const { img } of visuals) {
     img.addEventListener('load', () => { lastPosition = -1; requestPaint(); }, { once: true });
   }
-  text.textContent = chapter.beats[0].copy;
-  note.textContent = chapter.beats[0].note || defaultNote;
+  function updateCaption(index) {
+    const beat = chapter.beats[index];
+    section.dataset.beat = String(index);
+    section.dataset.mode = beat.mode;
+    text.textContent = beat.title;
+    explanation.textContent = beat.explanation;
+    note.textContent = beat.note || defaultNote;
+  }
+
+  updateCaption(0);
   function position() {
     return Math.min(visuals.length, Math.max(0, (stickyTop - section.getBoundingClientRect().top) / span));
   }
 
-  return { section, layout, showStatic, paint, position };
+  return { section, panel, layout, showStatic, paint, position };
 }
 
 const panels = chapters.map(createChapter);
@@ -141,6 +158,7 @@ story.append(...panels.map(item => item.section));
 
 const sources = document.getElementById('sources');
 for (const chapter of chapters) {
+  if (!chapter.note) continue;
   const heading = document.createElement('h2');
   heading.textContent = chapter.name;
   const text = document.createElement('p');
@@ -156,7 +174,8 @@ for (const chapter of chapters) {
   }
   sources.append(heading, text, links);
 }
-document.getElementById('reading').hidden = false;
+const reading = document.getElementById('reading');
+reading.hidden = false;
 
 function draw() {
   frame = 0;
@@ -171,7 +190,11 @@ function requestPaint() {
 }
 
 function relayout() {
-  if (!motionPreference.matches) panels.forEach(panel => panel.layout());
+  if (!motionPreference.matches) {
+    panels.forEach(panel => panel.layout());
+    const finalPanel = panels.at(-1).panel;
+    reading.style.setProperty('--final-panel-height', finalPanel.getBoundingClientRect().height + 'px');
+  }
   requestPaint();
 }
 

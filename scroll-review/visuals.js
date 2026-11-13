@@ -45,6 +45,15 @@ function createVisual(chapter, beat) {
   world.append(img);
   shot.append(world);
 
+  const mode = beat.mode;
+  if (mode === 'portrait' || mode === 'overview') {
+    const end = mode === 'portrait' ? 1.025 : 1;
+    const start = mode === 'portrait' ? 1 : 1.12;
+    return { shot, img, paint(progress, still) {
+      world.style.transform = `scale(${still ? 1 : start + (end - start) * ease(progress)})`;
+    } };
+  }
+
   const svg = svgNode('svg', { viewBox: '0 0 1672 941', preserveAspectRatio: 'none', 'aria-hidden': 'true' }, world);
   const defs = svgNode('defs', {}, svg);
   const id = ++overlayId;
@@ -58,7 +67,7 @@ function createVisual(chapter, beat) {
   let routes = [];
   const glows = [];
   const nodes = [];
-  const mode = beat.mode;
+  const fibers = [];
   let focus;
   let startZoom = 1;
   let endZoom = 1;
@@ -83,8 +92,22 @@ function createVisual(chapter, beat) {
   } else if (mode === 'oxygen') {
     routes = oxygenRoutes.map(d => trace(d, { opacity: .46, 'stroke-dasharray': '3 10' }));
   } else if (mode === 'smallVessel') {
-    routes = [trace('M320 770 C575 625 895 475 1195 270', { opacity: .22 })];
+    const lumen = beat.altered ? 'M440 711 C680 550 924 478 1230 280' : 'M320 770 C575 625 895 475 1195 270';
+    routes = [trace(lumen, { opacity: .22 })];
     if (beat.altered) focus = ring(970, 430, 80, .8);
+  } else if (mode === 'tissue') {
+    world.style.setProperty('--origin', '64% 74%');
+    endZoom = 1.09;
+    const strands = [
+      'M548 883 Q786 820 1000 744 T1595 515',
+      'M671 932 Q890 874 1144 789 T1664 603',
+      'M832 930 Q1028 884 1238 817 T1666 697',
+    ];
+    for (const d of strands) {
+      const strand = trace(d, { opacity: .12, 'stroke-width': 4, 'stroke-dasharray': '8 11' });
+      fibers.push(strand);
+    }
+    glows.push(glow(1130, 765, 184, .42));
   } else if (mode === 'structure') {
     focus = ring(540, 600, 155, .9);
     glow(540, 600, 190, .5);
@@ -122,6 +145,9 @@ function createVisual(chapter, beat) {
     if (focus) focus.setAttribute('opacity', still ? .85 : .38 + p * .5);
     for (const [i, mark] of glows.entries()) {
       mark.setAttribute('opacity', still ? .72 : .32 + .55 * Math.max(0, Math.sin(p * Math.PI * 2 - i)));
+    }
+    for (const [i, strand] of fibers.entries()) {
+      strand.setAttribute('opacity', still ? .66 : .16 + .56 * ease((p - i * .13) / .56));
     }
     for (const [i, mark] of nodes.entries()) {
       const phase = beat.altered ? p * .71 : p;

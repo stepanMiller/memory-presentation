@@ -6,12 +6,10 @@ const { chromium, webkit, devices } = require(process.env.MEMORY_PLAYWRIGHT || '
 
 const base = process.env.MEMORY_SCROLL_URL || 'http://127.0.0.1:4175/';
 const evidence = resolve(__dirname, '../output/scroll-qa');
-const sections = ['memory', 'vessels', 'b12'];
-const lengths = [4, 5, 3];
 const widths = [320, 375, 390, 430, 768, 1440, 1920];
 const css = (page, topic) => page.locator('#' + topic);
 
-async function scrollTo(page, topic, beat, phase = .5) {
+async function scrollTo(page, topic, beat, phase = .5, visibleBeat = beat) {
   const target = await page.evaluate(async ({ topic, beat, phase }) => {
     await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
     const section = document.getElementById(topic);
@@ -31,7 +29,7 @@ async function scrollTo(page, topic, beat, phase = .5) {
     const progress = (sticky - section.getBoundingClientRect().top) / distance;
     const scale = Number(bar.style.transform.match(/scaleX\(([^)]+)\)/)?.[1]);
     return Math.abs(scrollY - y) <= 16 && Math.abs(scale - progress) <= .0015 && section.dataset.beat === String(beat);
-  }, { topic, beat, ...target }, { timeout: 5000 }); }
+  }, { topic, beat: visibleBeat, ...target }, { timeout: 5000 }); }
   catch (error) {
     const actual = await page.locator('#' + topic).evaluate(section => ({
       y: scrollY, top: section.getBoundingClientRect().top, beat: section.dataset.beat,
@@ -42,7 +40,7 @@ async function scrollTo(page, topic, beat, phase = .5) {
   }
 }
 
-async function verifyLayout(browser, device, label) {
+async function verifyLayout(browser, device, label, chapters) {
   const page = await browser.newPage({ ...device });
   const errors = [];
   page.on('pageerror', e => errors.push(e.message));
@@ -58,13 +56,14 @@ async function verifyLayout(browser, device, label) {
   for (const width of widths) {
     await page.setViewportSize({ width, height: width >= 1440 ? 900 : 844 });
     await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-    for (const [group, topic] of sections.entries()) {
-      for (let beat = 0; beat < lengths[group]; beat++) {
+    for (const { id: topic, beats } of chapters) {
+      for (const [beat, expected] of beats.entries()) {
         await scrollTo(page, topic, beat);
         const result = await css(page, topic).evaluate(section => {
           const panel = section.querySelector('.scroll-panel').getBoundingClientRect();
           const view = section.querySelector('.viewport').getBoundingClientRect();
           const heading = section.querySelector('.beat-copy').getBoundingClientRect();
+          const explanation = section.querySelector('.beat-explanation').getBoundingClientRect();
           const visible = [...section.querySelectorAll('.shot')].filter(shot => Number(shot.style.opacity) > .001);
           const target = visible.at(-1);
           const tag = target.querySelector('.annotation');
@@ -76,13 +75,24 @@ async function verifyLayout(browser, device, label) {
             heading: [Math.round(heading.top), Math.round(heading.bottom)],
             panelBottom: Math.round(panel.bottom),
             viewport: Math.round(view.height),
-            loaded: target.querySelector('img').naturalWidth === 1672,
-            tagFits: tag.hidden || tag.getBoundingClientRect().right <= view.right + 1,
+            loaded: target.querySelector('img').naturalWidth > 0,
+            copy: section.querySelector('.beat-copy').textContent,
+            explanation: section.querySelector('.beat-explanation').textContent,
+            explains: explanation.top >= heading.bottom && explanation.bottom <= panel.bottom &&
+              (innerWidth >= 700 || explanation.bottom <= view.top),
+            mode: target.dataset.mode,
+            altered: target.dataset.altered === 'true',
+            tagFits: !tag || tag.hidden || tag.getBoundingClientRect().right <= view.right + 1,
             marked: !!(mark || target.querySelector('svg circle')),
           };
         });
         assert.ok(!result.overflow && result.pinned && result.fits && result.viewport >= 260 &&
-          result.loaded && result.tagFits && result.marked, label + ' ' + width + ' ' + topic + ':' + beat + ' ' + JSON.stringify(result));
+          result.loaded && result.tagFits && result.explains && (result.marked || ['portrait', 'overview'].includes(expected.mode)),
+          label + ' ' + width + ' ' + topic + ':' + beat + ' ' + JSON.stringify(result));
+        assert.equal(result.copy, expected.title);
+        assert.equal(result.explanation, expected.explanation);
+        assert.equal(result.mode, expected.mode);
+        assert.equal(result.altered, Boolean(expected.altered));
         checks.push([width, topic, beat]);
       }
     }
@@ -98,15 +108,26 @@ async function verifyLayout(browser, device, label) {
   await scrollTo(page, 'vessels', 2, .2);
   assert.equal(await particle.getAttribute('transform'), p1, 'The same scroll position must produce the same frame');
 
-  for (const [group, topic] of sections.entries()) {
-    for (let i = 0; i < lengths[group]; i++) await scrollTo(page, topic, i);
+  for (const { id, beats } of chapters) {
+    for (let i = 0; i < beats.length; i++) await scrollTo(page, id, i);
   }
-  for (let group = sections.length - 1; group >= 0; group--) {
-    for (let i = lengths[group] - 1; i >= 0; i--) await scrollTo(page, sections[group], i);
+  for (const { id, beats } of [...chapters].reverse()) {
+    for (let i = beats.length - 1; i >= 0; i--) {
+      await scrollTo(page, id, i);
+      assert.equal(await css(page, id).locator('.scroll-panel .beat-copy').textContent(), beats[i].title);
+    }
   }
+  await scrollTo(page, 'microcirculation', 0, .86);
+  assert.equal(await css(page, 'microcirculation').locator('.scroll-panel .beat-copy').textContent(), chapters[3].beats[0].title);
+  await scrollTo(page, 'microcirculation', 0, .95, 1);
+  assert.equal(await css(page, 'microcirculation').locator('.scroll-panel .beat-copy').textContent(), chapters[3].beats[1].title);
+  await scrollTo(page, 'microcirculation', 0, .86);
+  assert.equal(await css(page, 'microcirculation').locator('.scroll-panel .beat-copy').textContent(), chapters[3].beats[0].title);
   for (const [topic, beat, name] of [
-    ['memory', 0, '01-hear'], ['memory', 3, '02-recall'], ['vessels', 1, '03-network'],
-    ['vessels', 2, '04-oxygen'], ['vessels', 4, '05-arteriole'], ['b12', 0, '06-structure'], ['b12', 2, '07-myelin'],
+    ['person', 0, '01-person'], ['memory', 1, '02-attention'], ['vessels', 1, '03-network'],
+    ['vessels', 2, '04-oxygen'], ['microcirculation', 0, '05-arteriole-normal'],
+    ['microcirculation', 1, '06-arteriole-changed'], ['microcirculation', 2, '07-tissue'],
+    ['b12', 1, '08-myelin'], ['b12', 2, '09-b12'], ['conclusion', 2, '10-conclusion'],
   ]) {
     await scrollTo(page, topic, beat, .67);
     await page.screenshot({ path: resolve(evidence, label + '-mobile-' + name + '.png') });
@@ -114,18 +135,21 @@ async function verifyLayout(browser, device, label) {
   await page.setViewportSize({ width: 1440, height: 900 });
   await scrollTo(page, 'vessels', 2, .67);
   await page.screenshot({ path: resolve(evidence, label + '-desktop-oxygen.png') });
+  await scrollTo(page, 'conclusion', 2, .67);
+  await page.screenshot({ path: resolve(evidence, label + '-desktop-conclusion.png') });
 
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await page.waitForFunction(() => document.body.classList.contains('motion-off'));
-  const staticCards = page.locator('.static-story figure .viewport');
-  assert.equal(await staticCards.count(), 12);
-  assert.equal(await page.locator('.scroll-panel:visible').count(), 0);
-  const staticSignal = staticCards.nth(6).locator('.particle').first();
+  const stillPage = await browser.newPage({ ...device, reducedMotion: 'reduce' });
+  await stillPage.goto(base);
+  await stillPage.waitForFunction(() => document.body.classList.contains('motion-off'));
+  const staticCards = stillPage.locator('.static-story figure .viewport');
+  assert.equal(await staticCards.count(), chapters.reduce((total, chapter) => total + chapter.beats.length, 0));
+  assert.equal(await stillPage.locator('.scroll-panel:visible').count(), 0);
+  const staticOxygen = css(stillPage, 'vessels').locator('.static-story figure').last();
+  const staticSignal = staticOxygen.locator('.particle').first();
   const staticTransform = await staticSignal.getAttribute('transform');
-  await staticCards.nth(6).scrollIntoViewIfNeeded();
+  await staticOxygen.scrollIntoViewIfNeeded();
   assert.equal(await staticSignal.getAttribute('transform'), staticTransform);
-  await page.emulateMedia({ reducedMotion: 'no-preference' });
-  await scrollTo(page, 'vessels', 2);
+  await stillPage.close();
   await page.locator('summary').focus();
   await page.keyboard.press('Enter');
   assert.equal(await page.locator('details').getAttribute('open'), '');
@@ -155,6 +179,21 @@ async function touchAndTiming(browser) {
   await gesture(230, 730);
   await page.waitForFunction(() => document.getElementById('memory').dataset.beat === '0');
 
+  // Cross each chapter boundary using the native gesture, with no clicks in the story.
+  const boundaries = [
+    ['person', 0, 'memory'], ['memory', 3, 'vessels'], ['vessels', 2, 'microcirculation'],
+    ['microcirculation', 2, 'b12'], ['b12', 2, 'conclusion'],
+  ];
+  for (const [from, last, to] of boundaries) {
+    await scrollTo(page, from, last, .98);
+    const panelTop = id => page.locator('#' + id + ' .scroll-panel').evaluate(panel => panel.getBoundingClientRect().top);
+    const before = await panelTop(to);
+    await gesture(714, 250);
+    assert.ok(await panelTop(to) < before - 300, 'Touch should enter ' + to);
+    await gesture(228, 745);
+    assert.ok(await panelTop(to) > before - 120, 'Reverse touch should return toward ' + from);
+  }
+
   await scrollTo(page, 'vessels', 2, .08);
   await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
   const metrics = await page.evaluate(async () => {
@@ -183,11 +222,12 @@ async function touchAndTiming(browser) {
 }
 
 (async () => {
+  const { chapters } = await import('./story.js');
   await mkdir(evidence, { recursive: true });
   const report = {};
   const chrome = await chromium.launch({ channel: 'chrome' });
   try {
-    report.chrome = await verifyLayout(chrome, devices['iPhone 15'], 'chrome');
+    report.chrome = await verifyLayout(chrome, devices['iPhone 15'], 'chrome', chapters);
     report.touchAndTiming = await touchAndTiming(chrome);
     const offline = await chrome.newPage();
     await offline.goto(pathToFileURL(resolve(__dirname, '../output/Memory-Scroll-Review.html')).href);
@@ -199,7 +239,7 @@ async function touchAndTiming(browser) {
   } finally { await chrome.close(); }
   const safariEngine = await webkit.launch();
   try {
-    report.webkit = await verifyLayout(safariEngine, devices['iPhone 15'], 'webkit');
+    report.webkit = await verifyLayout(safariEngine, devices['iPhone 15'], 'webkit', chapters);
     console.log('WebKit', report.webkit);
   } finally { await safariEngine.close(); }
   await writeFile(resolve(evidence, 'report.json'), JSON.stringify(report, null, 2) + '\n');

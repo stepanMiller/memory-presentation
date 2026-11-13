@@ -10,6 +10,7 @@
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 body { margin: 0; color: var(--ink); background: var(--paper); font: 16px/1.5 var(--sans); }
 .masthead {
   min-height: 79px;
@@ -31,10 +32,17 @@ h1 span { display: block; color: var(--muted); font: 12px/1.4 var(--sans); margi
   background: var(--paper);
   isolation: isolate;
 }
-.scene-header { padding: 13px max(20px, env(safe-area-inset-right)) 12px max(20px, env(safe-area-inset-left)); }
+.scene-header {
+  padding: 16px max(20px, env(safe-area-inset-right)) 15px max(20px, env(safe-area-inset-left));
+  min-height: 176px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  border-top: 1px solid var(--line);
+}
 .chapter-name { margin: 0 0 5px; color: var(--sage); text-transform: uppercase; font-size: 11px; font-weight: 700; letter-spacing: .095em; }
 .beat-copy { margin: 0; font: 400 clamp(24px, 6.8vw, 33px)/1.08 var(--serif); letter-spacing: -.035em; text-wrap: balance; }
-.scene-header { min-height: 123px; display: flex; flex-direction: column; justify-content: flex-end; border-top: 1px solid var(--line); }
+.beat-explanation { margin: 9px 0 0; font-size: 16px; line-height: 1.35; max-width: 34ch; }
 .viewport {
   position: relative;
   background: #ac7c60;
@@ -43,9 +51,12 @@ h1 span { display: block; color: var(--muted); font: 12px/1.4 var(--sans); margi
   isolation: isolate;
 }
 .shot { position: absolute; inset: 0; background: #ac7c60; }
+.shot[data-mode="portrait"] { background: #eee8dc; }
 .world { position: absolute; inset: 0 auto 0 0; width: 100%; transform-origin: var(--origin, 70% 48%); }
 .world > img, .world > svg { display: block; width: 100%; height: 100%; position: absolute; inset: 0; }
 .world > img { object-fit: fill; }
+.shot[data-mode="portrait"] .world { width: 100%; right: 0; transform-origin: 68% 45%; }
+.shot[data-mode="portrait"] img { object-fit: cover; object-position: right 32%; }
 .viewport::after {
   content: ""; position: absolute; z-index: 3; inset: 0; pointer-events: none;
   background: linear-gradient(0deg, #36241980, transparent 29%);
@@ -74,7 +85,7 @@ body:not(.motion-off) .static-story {
   padding: 0; margin: 0;
 }
 footer, .notice { max-width: 830px; margin: 0 auto; padding: 30px max(24px, env(safe-area-inset-right)) 44px max(24px, env(safe-area-inset-left)); }
-.closing { font: 400 clamp(27px, 5vw, 46px)/1.16 var(--serif); margin: 0 0 20px; }
+body:not(.motion-off) footer { min-height: calc(100svh - var(--final-panel-height, 0px) + 18px); }
 details { border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
 summary { min-height: 44px; cursor: pointer; padding-block: 10px; color: var(--ink); }
 summary:focus-visible, a:focus-visible { outline: 2px solid var(--sage); outline-offset: 4px; }
@@ -83,11 +94,11 @@ details p { margin: 0 0 14px; }
 details ul { padding-left: 20px; margin: 6px 0 19px; }
 details a { color: var(--sage); text-underline-offset: 3px; }
 @media (max-width: 699px) {
-  .scene-header { height: 135px; }
+  .scene-header { min-height: 184px; }
   .world { width: calc(var(--scene-width, 100vw) * 1.70); left: auto; right: calc(var(--scene-width, 100vw) * -.12); }
   .shot[data-mode="hear"] .world, .shot[data-mode="attention"] .world,
   .shot[data-mode="encode"] .world, .shot[data-mode="recall"] .world,
-  .shot[data-mode="brainSupply"] .world, .shot[data-mode="network"] .world {
+  .shot[data-mode="brainSupply"] .world, .shot[data-mode="network"] .world, .shot[data-mode="overview"] .world {
     width: calc(var(--scene-width, 100vw) * 1.65); right: calc(var(--scene-width, 100vw) * -.12);
   }
   .shot[data-mode="structure"] .world, .shot[data-mode="signal"] .world, .shot[data-mode="deficiency"] .world {
@@ -98,17 +109,25 @@ details a { color: var(--sage); text-underline-offset: 3px; }
   .masthead { min-height: 86px; padding-inline: 4.1%; }
   h1 { font-size: 31px; }
   .scene-header {
-    position: absolute; z-index: 4; left: 0; top: 0; width: 44%; min-height: 0;
-    padding: clamp(24px, 4vw, 68px) 0 0 4.1%; color: #fff7e9; border: 0; pointer-events: none;
+    position: absolute; z-index: 4; left: 0; top: 0; width: 37%; min-height: 0;
+    padding: clamp(23px, 3.5vw, 64px) 0 0 4.1%; color: #fff7e9; border: 0; pointer-events: none;
   }
   .chapter-name { color: inherit; margin-bottom: 13px; }
-  .beat-copy { font-size: clamp(33px, 4.05vw, 67px); line-height: 1.04; text-wrap: pretty; }
+  .beat-copy { font-size: clamp(27px, 3.15vw, 61px); line-height: 1.04; text-wrap: pretty; }
+  .beat-explanation { font-size: clamp(15px, 1.36vw, 21px); margin-top: 15px; }
   .viewport { height: min(56.28vw, calc(100svh - 68px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))); min-height: 320px; }
   .world { width: max(100%, calc(var(--scene-height, 56.28vw) * 1.777)); left: auto; right: 0; }
   .world > img, .world > svg { object-fit: fill; }
   .viewport::after {
-    background: linear-gradient(90deg, #3624199c, #3624194f 30%, transparent 60%), linear-gradient(0deg, #36241980, transparent 26%);
+    background: linear-gradient(90deg, #2e1b14c7, #2e1b1480 28%, transparent 62%), linear-gradient(0deg, #36241980, transparent 26%);
   }
+  .chapter[data-mode="portrait"] .scene-header { color: var(--ink); }
+  .chapter[data-mode="portrait"] .chapter-name { color: var(--sage); }
+  .chapter[data-mode="portrait"] .viewport::after {
+    background: linear-gradient(90deg, #f4eee5 1%, #f4eee5dd 27%, transparent 55%);
+  }
+  .shot[data-mode="portrait"] img { object-position: right 32%; }
+  .shot[data-mode="portrait"] .world { width: 88%; left: auto; }
   .annotation { left: 4.1%; bottom: 28px; font-size: 16px; }
   .scene-foot { padding-inline: 4.1%; }
   .static-story .beat-copy { font-size: 32px; }
@@ -118,14 +137,8 @@ details a { color: var(--sage); text-underline-offset: 3px; }
   .scene-header { min-height: 0; }
 }
 @media (max-width: 699px) and (max-height: 640px) {
-  .scene-header { height: auto; min-height: 111px; }
+  .scene-header { min-height: 154px; }
   .beat-copy { font-size: clamp(23px, 6vw, 28px); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .scroll-panel, .scroll-distance { display: none; }
-  body:not(.motion-off) .static-story {
-    position: static; width: auto; height: auto; overflow: visible; clip-path: none; white-space: normal;
-    padding: 18px 0 30px;
-  }
+  .beat-explanation { font-size: 15px; }
 }
 
