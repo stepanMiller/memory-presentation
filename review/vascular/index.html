@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#f4eee5">
+  <title>Память. Внутри ткани | Контрольная сцена</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="brand" href="../../">Память<span>Понять, что меняется</span></a>
+    <span class="review">Визуальная проба <span>01 / сосуды</span></span>
+  </header>
+  <main>
+    <section class="scene" aria-labelledby="scene-title">
+      <div class="intro">
+        <p class="eyebrow">Внутри нервной ткани</p>
+        <h1 id="scene-title">Мозгу нужен<br>постоянный приток<br><em>кислорода.</em></h1>
+        <p class="intro-copy">Рассмотрим, как кровь<br>снабжает соседние клетки.</p>
+      </div>
+      <div class="stage" id="stage">
+        <div class="world" id="world">
+          <img class="anatomy" src="assets/microvascular.webp" width="1672" height="941" alt="Учебная иллюстрация: открытый участок капилляра с эритроцитами, рядом нервная клетка и миелинизированные волокна.">
+          <svg class="process" viewBox="0 0 1672 941" aria-hidden="true">
+            <defs>
+              <filter id="soft-glow"><feGaussianBlur stdDeviation="5"/></filter>
+              <radialGradient id="tissue-light"><stop stop-color="#fff3cf" stop-opacity=".46"/><stop offset="1" stop-color="#fff3cf" stop-opacity="0"/></radialGradient>
+            </defs>
+            <ellipse id="cell-light" cx="1325" cy="480" rx="200" ry="170" fill="url(#tissue-light)" opacity="0"/>
+            <g class="callout-lines" fill="none" stroke="#fff4df" stroke-width="1.5">
+              <path d="M980 205 L934 270 L920 350"/>
+              <circle cx="920" cy="350" r="4" fill="#fff4df"/>
+              <path d="M1390 280 L1360 340 L1340 420"/>
+              <circle cx="1340" cy="420" r="4" fill="#fff4df"/>
+              <path d="M1420 720 L1360 755 L1270 780"/>
+              <circle cx="1270" cy="780" r="4" fill="#fff4df"/>
+            </g>
+            <g id="paths" fill="none" stroke="#fff1c8" stroke-width="2" stroke-dasharray="3 9" opacity="0">
+              <path id="o-a" d="M810 480 Q955 490 1060 520 T1250 485"/>
+              <path id="o-b" d="M860 415 Q1020 425 1115 440 T1250 460"/>
+              <path id="o-c" d="M770 560 Q875 660 1025 645 T1195 600"/>
+            </g>
+            <g id="oxygen"></g>
+            <circle id="focus-ring" cx="920" cy="350" r="40" fill="none" stroke="#fff3d1" stroke-width="2" opacity="0"/>
+          </svg>
+          <button class="label capillary" data-part="capillary" aria-pressed="false"><span>01</span> Капилляр <b>+</b></button>
+          <button class="label neuron" data-part="neuron" aria-pressed="false"><span>02</span> Нервная клетка <b>+</b></button>
+          <button class="label myelin" data-part="myelin" aria-pressed="false"><span>03</span> Миелин <b>+</b></button>
+        </div>
+        <span class="image-note">Учебная анатомическая иллюстрация</span>
+        <span class="oxygen-key" id="oxygen-key"><i></i> Кислород: условное обозначение</span>
+      </div>
+      <div class="controls">
+        <div class="explanation" aria-live="polite" aria-atomic="true">
+          <p class="step" id="step">01 / Рассмотреть</p>
+          <h2 id="detail-title">Сосуд и нервная ткань работают рядом.</h2>
+          <p id="detail-copy">Нажмите на подпись, чтобы рассмотреть структуру. Затем проследите путь кислорода.</p>
+        </div>
+        <div class="actions">
+          <button class="primary" id="play"><span id="play-label">Показать путь кислорода</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14m-5-5 5 5-5 5"/></svg></button>
+          <button class="reset" id="reset" hidden>Вернуться к строению</button>
+        </div>
+      </div>
+      <noscript><p class="noscript">Для интерактивного просмотра включите JavaScript. На изображении показаны капилляр и соседняя нервная ткань. Кислород переходит из крови через стенку капилляра к ткани.</p></noscript>
+    </section>
+    <footer class="footnote">
+      <p>Контрольный экран для визуального и медицинского согласования.</p>
+      <details><summary>Об условностях изображения</summary><p>Художественная учебная модель, не микрофотография. Масштаб структур и скорость переноса условны. Светлые метки показывают направление переноса кислорода; эритроциты остаются внутри сосуда. Свечение рядом с клеткой служит пояснением, оно не изображает реальное излучение или измерение её активности. В этой пробе показана нормальная доставка кислорода, без диагноза и модели лечения.</p><p>Медицинская основа: <a href="https://www.nia.nih.gov/health/vascular-dementia/vascular-dementia-causes-symptoms-and-treatments" target="_blank" rel="noopener noreferrer">National Institute on Aging</a>. Сосудистые когнитивные нарушения имеют разные механизмы; эта сцена не объясняет их все.</p></details>
+      <a class="back" href="../../">Вернуться к трём демонстрациям <span>↗</span></a>
+    </footer>
+  </main>
+</body>
+</html>

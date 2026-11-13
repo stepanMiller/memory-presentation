@@ -6,6 +6,7 @@ on:
     paths:
       - 'src/**'
       - 'v2/**'
+      - 'review/**'
       - 'scripts/build.mjs'
       - 'scripts/build-v2.mjs'
       - 'scripts/build-pages.mjs'

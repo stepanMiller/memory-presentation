@@ -13,5 +13,6 @@ try{
  run('scripts/check-v2.mjs');
  run('scripts/build-v2.mjs');
  await cp(archive,path.join(root,'dist/v1'),{recursive:true});
+ await cp(path.join(root,'review'),path.join(root,'dist/review'),{recursive:true,filter:source=>!source.endsWith('.md')});
  console.log('GitHub Pages build ready: V2 at /; preserved V1 at /v1/.');
 }finally{await rm(archive,{recursive:true,force:true});}
