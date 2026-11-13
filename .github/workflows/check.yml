@@ -7,6 +7,7 @@ permissions:
   contents: read
 jobs:
   build:
+    timeout-minutes: 12
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +31,7 @@ jobs:
           npm run build:pages
           node tests/mechanisms.cjs
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: memory-review
           path: |

@@ -7,9 +7,9 @@ const widths=[320,375,390,430,768,1024,1440];
  await fs.mkdir('test-results/mechanisms',{recursive:true});const report=[];
  for(const [engine,type]of [['chromium',chromium],['webkit',webkit]]){
   const browser=await type.launch();const context=await browser.newContext({viewport:{width:390,height:844},isMobile:engine==='webkit',hasTouch:engine==='webkit'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
-  await page.goto(base);await page.waitForFunction(()=>window.MemoryMechanisms);
+  page.setDefaultTimeout(15000);console.log('Checking engine',engine);await page.goto(base);await page.waitForFunction(()=>window.MemoryMechanisms);
   for(const width of widths){
-   await page.setViewportSize({width,height:900});
+   console.log('Checking width',engine,width);await page.setViewportSize({width,height:900});
    for(const topic of ['memory','vessels','b12']){
     await page.locator(`.topics a[data-topic=${topic}]`).click();
     const n=await page.locator('#steps button').count();
@@ -37,4 +37,4 @@ const widths=[320,375,390,430,768,1024,1440];
  await fs.writeFile('test-results/mechanisms/report.json',JSON.stringify(report,null,2));
  const failures=report.filter(r=>r.overflow||!r.image||r.labels.some(l=>!l.fits));assert.deepEqual(failures,[]);
  console.log(`PASS: ${report.length} layout cases across Chromium and WebKit, image comparisons, finite animations, cancellation, reduced motion and reset.`);
-})().catch(e=>{console.error(e);process.exitCode=1;});
+})().catch(e=>{console.error(e);process.exit(1);});
