@@ -66,7 +66,7 @@ function build(ep){
  q('.previous').onclick=()=>seek(model,Math.max(0,model.step-1));q('.next').onclick=()=>seek(model,Math.min(ep.beats.length-1,model.step+1));
  q('.play').onclick=()=>{if(model.done||reduced.matches)return;if(active!==model)activate(model);model.paused=!model.paused;if(model.paused)disableContinuous();sync(model);schedule();};
  q('.next-episode').onclick=()=>disableContinuous();
- q('.compare-controls').querySelectorAll('button').forEach(b=>b.onclick=()=>{model.paused=true;disableContinuous();model.forceComparison=Number(b.dataset.compare);if(ep.kind==='vessel')model.time=model.forceComparison?9:0;else model.time=model.forceComparison?19:0;model.step=-1;render(model,true);sync(model);});
+ q('.compare-controls').querySelectorAll('button').forEach(b=>b.onclick=()=>{model.paused=true;disableContinuous();model.forceComparison=Number(b.dataset.compare);if(ep.kind==='vessel')model.time=model.forceComparison?9:0;else model.time=19;model.step=-1;render(model,true);sync(model);});
  q('.open-chapters')?.addEventListener('click',openContents);
  return model;
 }
@@ -108,7 +108,7 @@ function render(m,immediate=false){
   const base=ep.kind==='nerve'?.54:ep.kind==='vessel'?.59:ep.asset==='man'?.70:.46;
   scale=base*(w/390);y=Math.max(210,h*.255);
   let focusX=ep.focus[0];
-  if(ep.kind==='nerve')focusX=720+280*ease((t-7)/8);
+  if(ep.kind==='nerve'){focusX=720+440*ease((t-9)/4);y+=30*ease((t-9)/4);}
   if(ep.kind==='vessel')focusX=1000+70*ease((t-18)/5);
   if(ep.kind==='portrait'||ep.kind==='ending')y=Math.max(180,h*.22);
   x=w*.54-focusX*scale;
@@ -177,7 +177,8 @@ const observer=new IntersectionObserver(entries=>{
 window.addEventListener('wheel',()=>disableContinuous(),{passive:true});
 window.addEventListener('touchmove',()=>disableContinuous(),{passive:true});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){disableContinuous();if(active){active.paused=true;sync(active);}schedule();}});
-window.addEventListener('resize',()=>models.forEach(m=>render(m,true)));
+let layoutWidth=window.innerWidth;
+window.addEventListener('resize',()=>{const widthChanged=window.innerWidth!==layoutWidth;layoutWidth=window.innerWidth;models.forEach(m=>render(m,true));if(widthChanged&&active)active.section.scrollIntoView({behavior:'instant',block:'start'});});
 reduced.addEventListener('change',()=>{disableContinuous();models.forEach(m=>{m.paused=true;if(reduced.matches){m.time=m.ep.duration;m.done=true;}render(m,true);sync(m);});schedule();});
 document.addEventListener('keydown',e=>{if($('contents').open||e.target.closest('button,a,input,summary')||!active)return;if(e.code==='Space'){e.preventDefault();active.q('.play').click();}else if(e.code==='ArrowRight'){e.preventDefault();active.q('.next').click();}else if(e.code==='ArrowLeft'){e.preventDefault();active.q('.previous').click();}});
 function openContents(){dialogPaused=true;schedule();$('contents').showModal();}
