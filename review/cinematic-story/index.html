@@ -6,18 +6,18 @@
   <meta name="theme-color" content="#2d211b">
   <meta name="robots" content="noindex,nofollow">
   <title>Память. Понять, что меняется</title>
-  <link rel="stylesheet" href="story.css?v=3">
+  <link rel="stylesheet" href="story.css?v=4">
 </head>
 <body>
   <a class="skip" href="#story">Перейти к истории</a>
   <main id="story" aria-label="Память. Понять, что меняется"></main>
+  <button class="film-play" id="film-play" aria-label="Поставить историю на паузу">Пауза Ⅱ</button>
   <button class="contents-button" id="contents-open" aria-haspopup="dialog">Главы <span aria-hidden="true">☰</span></button>
   <dialog id="contents" aria-labelledby="contents-title">
     <div class="dialog-top"><span>Память</span><button id="contents-close" aria-label="Закрыть главы">×</button></div>
     <h2 id="contents-title">Вернуться к важному</h2>
     <nav id="chapter-links" aria-label="Главы истории"></nav>
-    <label class="autoplay-option"><input type="checkbox" id="autoplay"> Переходить дальше автоматически</label>
-    <p>Можно листать самому. Свайп останавливает автоматические переходы.</p>
+    <p class="playback-note">История идёт сама. Свайп переводит к другому эпизоду, после него просмотр продолжается. Чтобы остановиться, нажмите «Пауза».</p>
     <a class="source-link" href="#medical" id="medical-link">О модели и медицинских источниках</a>
   </dialog>
   <section id="medical" class="medical" aria-labelledby="medical-title">
@@ -41,6 +41,6 @@
     <a href="#episode-1" class="return-link">К началу истории ↑</a>
   </section>
   <noscript><p class="no-script">Для анимации нужен JavaScript. <a href="../cinematic-mobile/index.html">Открыть предыдущую версию</a>. Медицинские пояснения и источники доступны ниже.</p></noscript>
-  <script src="story.js?v=3" defer></script>
+  <script src="story.js?v=4" defer></script>
 </body>
 </html>

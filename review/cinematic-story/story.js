@@ -52,7 +52,7 @@ function build(ep){
  <div class="copy"><p class="kicker">${CHAPTERS[ep.chapter].toUpperCase()}</p><div class="words"><${heading}>${ep.beats[0].title}</${heading}><p class="description">${ep.beats[0].description}</p></div></div>
  <div class="callout"></div><div class="semantic" hidden></div><div class="network" hidden><svg viewBox="0 0 350 130" aria-hidden="true"><path d="M10 20 L100 20 Q140 20 160 50 L205 80 M100 20 Q140 20 160 5 L205 5 M205 80 L255 60 M205 80 L255 100 M205 5 L255 25 M255 25 L325 15 M255 25 L325 40 M255 60 L325 55 M255 60 L325 80 M255 100 L325 100 M255 100 L325 120" pathLength="1"/><text x="0" y="55">Ветви</text><text x="240" y="50">Капилляры</text></svg><p>Схема разветвления · не анатомическая карта</p></div>
  <div class="compare-controls" hidden><button data-compare="0">Исходный вид</button><button data-compare="1">Возможное изменение</button></div>
- ${ep.id===1?'<div class="opening-action"><button class="primary" id="start-film">Смотреть историю <span aria-hidden="true">↓</span></button><p>Около 3 минут. Можно листать самому.</p></div>':''}
+ ${ep.id===1?'<div class="opening-action"><button class="primary" id="start-film">Начать сейчас <span aria-hidden="true">↓</span></button><p>История идёт сама. Около 3 минут.<br>Можно листать и ставить на паузу.</p></div>':''}
  ${ep.id===9?'<div class="ending" hidden><a href="#medical">Источники и пояснения</a><button class="open-chapters">Вернуться к главам ↑</button></div>':''}
  <p class="takeaway">${ep.beats[0].conclusion}</p>
  <footer class="transport"><p class="note">${ep.note}</p><div class="controls"><button class="previous" aria-label="Предыдущее состояние">←</button><span class="state-count">1 / ${ep.beats.length}</span><button class="next" aria-label="Следующее состояние">→</button><button class="play" aria-label="Поставить на паузу">Пауза <span aria-hidden="true">Ⅱ</span></button><a class="next-episode" href="${ep.id<9?'#episode-'+(ep.id+1):'#medical'}">${ep.id<9?'Дальше ↓':'Источники ↓'}</a></div><div class="progress" role="progressbar" aria-label="Ход эпизода" aria-valuemin="0" aria-valuemax="${ep.duration}" aria-valuenow="0"><span></span></div><div class="sr" aria-live="polite"></div></footer>`;
@@ -64,9 +64,8 @@ function build(ep){
  if(ep.kind==='nerve')for(const[x,y]of [[824,500],[1118,360],[1405,220]])model.rings.push(svgNode('ellipse',{cx:x,cy:y,rx:29,ry:23,fill:'none',stroke:'#e0e6ca','stroke-width':4,opacity:0},model.motion));
  if(ep.kind==='vessel')model.tissue=svgNode('ellipse',{cx:1150,cy:735,rx:155,ry:65,transform:'rotate(-22 1150 735)',fill:'none',stroke:'#d2d4b5','stroke-width':2,opacity:0},model.motion);
  q('.previous').onclick=()=>seek(model,Math.max(0,model.step-1));q('.next').onclick=()=>seek(model,Math.min(ep.beats.length-1,model.step+1));
- q('.play').onclick=()=>{if(model.done||reduced.matches)return;if(active!==model)activate(model);model.paused=!model.paused;if(model.paused)disableContinuous();sync(model);schedule();};
- q('.next-episode').onclick=()=>disableContinuous();
- q('.compare-controls').querySelectorAll('button').forEach(b=>b.onclick=()=>{model.paused=true;disableContinuous();model.forceComparison=Number(b.dataset.compare);if(ep.kind==='vessel')model.time=model.forceComparison?9:0;else model.time=19;model.step=-1;render(model,true);sync(model);});
+ q('.play').onclick=togglePlayback;
+ q('.compare-controls').querySelectorAll('button').forEach(b=>b.onclick=()=>{pausedByUser=true;model.paused=true;model.done=false;model.forceComparison=Number(b.dataset.compare);if(ep.kind==='vessel')model.time=model.forceComparison?9:0;else model.time=19;model.step=-1;render(model,true);sync(model);schedule();});
  q('.open-chapters')?.addEventListener('click',openContents);
  return model;
 }
@@ -75,13 +74,23 @@ const models=EPISODES.map(build);
 const initialTarget=document.getElementById(location.hash.slice(1))||models[0].section;
 initialTarget.scrollIntoView({behavior:'instant',block:'start'});
 document.documentElement.classList.add('is-ready');
-let active=null,raf=0,lastStamp=null,continuous=false,autoTarget=null,dialogPaused=false;
+let active=null,raf=0,lastStamp=null,pausedByUser=false,navTarget=null,dialogPaused=false;
+let manualScrolling=false,fingerDown=false,settleTimer=0,navigationTimer=0;
+function playbackBlocked(){return pausedByUser||manualScrolling||fingerDown||!!navTarget||dialogPaused||document.hidden||reduced.matches;}
+function syncGlobal(){
+ const finished=active?.done&&active.ep.id===9;
+ const b=$('film-play');b.disabled=reduced.matches||!!finished;
+ b.textContent=reduced.matches?'Без движения':finished?'Завершено':pausedByUser?'Продолжить ▷':'Пауза Ⅱ';
+ b.setAttribute('aria-label',pausedByUser?'Продолжить историю':'Поставить историю на паузу');
+ document.body.dataset.playback=finished?'complete':pausedByUser?'paused':manualScrolling?'scrolling':navTarget?'transition':'playing';
+}
 function sync(m){
- const b=m.q('.play');b.disabled=m.done||reduced.matches||!m.ready;
- b.innerHTML=!m.ready?'Загрузка…':m.done?'Готово ✓':reduced.matches?'Без движения':m.paused?'Продолжить <span aria-hidden="true">▷</span>':'Пауза <span aria-hidden="true">Ⅱ</span>';
- b.setAttribute('aria-label',m.done?'Эпизод завершён':m.paused?'Продолжить эпизод':'Поставить на паузу');
+ const b=m.q('.play'),finished=m.done&&m.ep.id===9;b.disabled=finished||reduced.matches||!m.ready;
+ b.innerHTML=!m.ready?'Загрузка…':finished?'Готово ✓':reduced.matches?'Без движения':pausedByUser?'Продолжить <span aria-hidden="true">▷</span>':m.done?'Дальше…':'Пауза <span aria-hidden="true">Ⅱ</span>';
+ b.setAttribute('aria-label',finished?'История завершена':pausedByUser?'Продолжить историю':'Поставить историю на паузу');
  m.q('.previous').disabled=m.step<=0;m.q('.next').disabled=m.step>=m.ep.beats.length-1;
  m.q('.state-count').textContent=`${m.step+1} / ${m.ep.beats.length}`;
+ syncGlobal();
 }
 function changeWords(m,immediate){
  const n=stateAt(m.ep,m.time);if(n===m.step)return;m.step=n;const b=m.ep.beats[n];clearTimeout(m.copyTimer);
@@ -144,53 +153,123 @@ function render(m,immediate=false){
  }else{label.classList.remove('visible');leader.style.opacity='0';dot.style.opacity='0';}
  m.q('.progress span').style.transform=`scaleX(${t/ep.duration})`;m.q('.progress').setAttribute('aria-valuenow',String(Math.floor(t)));
 }
-function disableContinuous(){continuous=false;autoTarget=null;$('autoplay').checked=false;}
-function seek(m,index){disableContinuous();m.paused=true;m.done=false;m.forceComparison=null;const start=m.ep.beats[index].at,end=m.ep.beats[index+1]?.at??m.ep.duration;m.time=reduced.matches?Math.max(start,end-.01):start;m.step=-1;render(m,true);sync(m);}
+// Playback intent is independent of scrolling. Only an explicit pause changes it.
+let outsideStory=false;
+function resetFinished(m){
+ if(m.done&&!pausedByUser&&!reduced.matches){m.time=0;m.done=false;m.forceComparison=null;m.step=-1;}
+}
+function seek(m,index){
+ m.done=false;m.forceComparison=null;
+ const start=m.ep.beats[index].at,end=m.ep.beats[index+1]?.at??m.ep.duration;
+ m.time=reduced.matches?Math.max(start,end-.01):start;m.step=-1;m.paused=pausedByUser;
+ render(m,true);sync(m);schedule();
+}
 async function prepare(m){
- if(m.ready)return;const imgs=[m.plate,m.alternate].filter(Boolean);imgs.forEach(img=>img.loading='eager');
- const results=await Promise.allSettled(imgs.map(img=>img.decode()));m.failed=results.some(r=>r.status==='rejected');m.ready=true;
- if(m.failed)m.q('.note').textContent='Изображение не загрузилось. Проверьте соединение и обновите страницу.';
- sync(m);if(active===m){lastStamp=null;schedule();}
+ if(m.ready)return;if(m.preparing)return m.preparing;
+ const imgs=[m.plate,m.alternate].filter(Boolean);imgs.forEach(img=>img.loading='eager');
+ m.preparing=Promise.allSettled(imgs.map(img=>img.decode())).then(results=>{
+  m.failed=results.some(r=>r.status==='rejected');m.ready=true;
+  if(m.failed)m.q('.note').textContent='Изображение не загрузилось. Проверьте соединение и обновите страницу.';
+  sync(m);if(active===m)schedule();
+ });return m.preparing;
 }
-function activate(m){
- if(active===m)return;if(active){active.section.classList.remove('active');active.paused=true;sync(active);}
- active=m;m.section.classList.add('active');lastStamp=null;
- if(!m.visited){m.visited=true;m.paused=false;if(reduced.matches){m.time=m.ep.duration;m.done=true;m.paused=true;}}
- else if(continuous&&autoTarget===m.ep.id){m.paused=false;}
- if(autoTarget===m.ep.id)autoTarget=null;
- render(m,true);prepare(m);sync(m);schedule();
+function activate(m,{revisit=false}={}){
+ const changed=active!==m;
+ if(changed&&active){active.section.classList.remove('active');active.paused=true;sync(active);}
+ if(changed||revisit)resetFinished(m);
+ active=m;outsideStory=false;document.body.classList.remove('outside-story');m.section.classList.add('active');lastStamp=null;
+ if(!m.visited){m.visited=true;if(reduced.matches){m.time=m.ep.duration;m.done=true;}}
+ m.paused=pausedByUser||reduced.matches;
+ render(m,true);prepare(m);if(models[m.ep.id])prepare(models[m.ep.id]);sync(m);schedule();
 }
-function schedule(){cancelAnimationFrame(raf);raf=0;lastStamp=null;if(active&&!active.paused&&!active.done&&active.ready&&!document.hidden&&!dialogPaused&&!reduced.matches)raf=requestAnimationFrame(tick);}
-function nextAutomatic(m){if(!continuous||m.ep.id===9)return;const next=models[m.ep.id];autoTarget=next.ep.id;next.section.scrollIntoView({behavior:'smooth',block:'start'});}
-function tick(stamp){
- const m=active;if(!m||m.paused||m.done||document.hidden||dialogPaused||reduced.matches){raf=0;lastStamp=null;return;}
- if(lastStamp!==null)m.time=clamp(m.time+(stamp-lastStamp)/1000,0,m.ep.duration);lastStamp=stamp;render(m);
- if(m.time>=m.ep.duration){m.done=true;m.paused=true;sync(m);lastStamp=null;raf=0;nextAutomatic(m);return;}
+function bestVisible(){
+ const viewport=window.innerHeight;
+ let best=null,coverage=0;
+ for(const m of models){const r=m.section.getBoundingClientRect();const visible=Math.max(0,Math.min(viewport,r.bottom)-Math.max(0,r.top));const fraction=visible/Math.min(viewport,r.height);if(fraction>coverage){best=m;coverage=fraction;}}
+ return coverage>.5?best:null;
+}
+function settleManualScroll(){
+ if(fingerDown)return;
+ manualScrolling=false;const m=bestVisible();
+ if(m){activate(m);}else{outsideStory=true;document.body.classList.add('outside-story');if(active)active.paused=true;schedule();}
+ syncGlobal();
+}
+function armScrollSettle(){clearTimeout(settleTimer);settleTimer=setTimeout(settleManualScroll,240);}
+function beginManualScroll(){
+ if(navTarget){navTarget=null;clearTimeout(navigationTimer);window.scrollTo({top:window.scrollY,behavior:'instant'});}
+ manualScrolling=true;cancelAnimationFrame(raf);raf=0;lastStamp=null;syncGlobal();armScrollSettle();
+}
+function finishNavigation(){
+ if(!navTarget||manualScrolling||fingerDown)return;
+ const target=navTarget;
+ // Chapter jumps must not get stranded on an intermediate scroll-snap stop.
+ if(Math.abs(target.section.getBoundingClientRect().top)>2)target.section.scrollIntoView({behavior:'instant',block:'start'});
+ navTarget=null;activate(target,{revisit:true});
+}
+function armNavigationSettle(){clearTimeout(navigationTimer);navigationTimer=setTimeout(finishNavigation,180);}
+function goTo(m,{smooth=true}={}){
+ if(!m)return;
+ clearTimeout(settleTimer);manualScrolling=false;fingerDown=false;navTarget=m;
+ cancelAnimationFrame(raf);raf=0;lastStamp=null;prepare(m);syncGlobal();
+ m.section.scrollIntoView({behavior:smooth&&!reduced.matches?'smooth':'instant',block:'start'});
+ armNavigationSettle();
+}
+function schedule(){
+ cancelAnimationFrame(raf);raf=0;lastStamp=null;syncGlobal();
+ if(!active||outsideStory||playbackBlocked()||!active.ready)return;
+ active.paused=false;
+ if(active.done){if(active.ep.id<9)goTo(models[active.ep.id]);return;}
  raf=requestAnimationFrame(tick);
 }
-const observer=new IntersectionObserver(entries=>{
- for(const entry of entries){const m=models.find(m=>m.section===entry.target);m.ratio=entry.intersectionRatio;}
- const best=models.reduce((a,b)=>a.ratio>b.ratio?a:b);
- if(best.ratio>.48)activate(best);else if(active&&active.ratio<.30){active.paused=true;sync(active);schedule();}
-},{threshold:[0,.3,.48,.6,.8,1]});models.forEach(m=>{render(m,true);observer.observe(m.section);});
-// Native scroll remains native. Manual navigation opts out of automatic advancement.
-window.addEventListener('wheel',()=>disableContinuous(),{passive:true});
-window.addEventListener('touchmove',()=>disableContinuous(),{passive:true});
-document.addEventListener('visibilitychange',()=>{if(document.hidden){disableContinuous();if(active){active.paused=true;sync(active);}schedule();}});
+function tick(stamp){
+ const m=active;if(!m||outsideStory||playbackBlocked()||m.done){raf=0;lastStamp=null;return;}
+ if(lastStamp!==null)m.time=clamp(m.time+(stamp-lastStamp)/1000,0,m.ep.duration);lastStamp=stamp;render(m);
+ if(m.time>=m.ep.duration){m.done=true;sync(m);lastStamp=null;raf=0;if(m.ep.id<9)goTo(models[m.ep.id]);return;}
+ raf=requestAnimationFrame(tick);
+}
+function togglePlayback(){
+ if(reduced.matches||!active)return;
+ pausedByUser=!pausedByUser;active.paused=pausedByUser;models.forEach(sync);schedule();
+}
+const observer=new IntersectionObserver(()=>{
+ if(manualScrolling||navTarget)return;
+ const m=bestVisible();if(m&&m!==active)activate(m);
+ else if(!m){outsideStory=true;document.body.classList.add('outside-story');schedule();}
+ else if(outsideStory){outsideStory=false;document.body.classList.remove('outside-story');schedule();}
+},{threshold:[0,.25,.5,.75,1]});
+models.forEach(m=>{render(m,true);observer.observe(m.section);});
+// No preventDefault on touch or wheel: the browser owns native momentum and scroll.
+window.addEventListener('wheel',beginManualScroll,{passive:true});
+window.addEventListener('touchstart',e=>{if(e.target.closest('button,a,input,summary,dialog'))return;fingerDown=true;beginManualScroll();},{passive:true});
+window.addEventListener('touchmove',()=>{fingerDown=true;beginManualScroll();},{passive:true});
+function releaseTouch(){fingerDown=false;armScrollSettle();}
+window.addEventListener('touchend',releaseTouch,{passive:true});window.addEventListener('touchcancel',releaseTouch,{passive:true});
+window.addEventListener('scroll',()=>{if(navTarget){armNavigationSettle();return;}if(!manualScrolling)beginManualScroll();else armScrollSettle();},{passive:true});
+document.addEventListener('visibilitychange',()=>{lastStamp=null;if(document.hidden){cancelAnimationFrame(raf);raf=0;}else schedule();});
 let layoutWidth=window.innerWidth;
-window.addEventListener('resize',()=>{const widthChanged=window.innerWidth!==layoutWidth;layoutWidth=window.innerWidth;models.forEach(m=>render(m,true));if(widthChanged&&active)active.section.scrollIntoView({behavior:'instant',block:'start'});});
-reduced.addEventListener('change',()=>{disableContinuous();models.forEach(m=>{m.paused=true;if(reduced.matches){m.time=m.ep.duration;m.done=true;}render(m,true);sync(m);});schedule();});
-document.addEventListener('keydown',e=>{if($('contents').open||e.target.closest('button,a,input,summary')||!active)return;if(e.code==='Space'){e.preventDefault();active.q('.play').click();}else if(e.code==='ArrowRight'){e.preventDefault();active.q('.next').click();}else if(e.code==='ArrowLeft'){e.preventDefault();active.q('.previous').click();}});
+window.addEventListener('resize',()=>{const changed=window.innerWidth!==layoutWidth;layoutWidth=window.innerWidth;models.forEach(m=>render(m,true));if(changed&&active&&!navTarget&&!manualScrolling)active.section.scrollIntoView({behavior:'instant',block:'start'});});
+reduced.addEventListener('change',()=>{models.forEach(m=>{m.paused=reduced.matches||pausedByUser;if(reduced.matches){m.time=m.ep.duration;m.done=true;}render(m,true);sync(m);});schedule();});
+document.addEventListener('keydown',e=>{
+ if($('contents').open||e.target.closest('button,a,input,summary')||!active)return;
+ if(e.code==='Space'){e.preventDefault();togglePlayback();}
+ else if(e.code==='ArrowRight'){e.preventDefault();active.q('.next').click();}
+ else if(e.code==='ArrowLeft'){e.preventDefault();active.q('.previous').click();}
+ else if(['ArrowDown','ArrowUp','PageDown','PageUp','Home','End'].includes(e.code))beginManualScroll();
+});
 function openContents(){dialogPaused=true;schedule();$('contents').showModal();}
 $('contents-open').onclick=openContents;$('contents-close').onclick=()=>$('contents').close();
 $('contents').addEventListener('close',()=>{dialogPaused=false;schedule();});
-$('autoplay').onchange=()=>{continuous=$('autoplay').checked&&!reduced.matches;$('autoplay').checked=continuous;if(continuous&&active){active.paused=false;if(active.done)nextAutomatic(active);sync(active);}schedule();};
-$('autoplay').disabled=reduced.matches;
-CHAPTERS.forEach((title,i)=>{const m=models.find(m=>m.ep.chapter===i),a=document.createElement('a');a.href='#episode-'+m.ep.id;a.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span>${escapeHTML(title)}`;a.onclick=()=>{disableContinuous();$('contents').close();};$('chapter-links').append(a);});
-$('medical-link').onclick=()=>{disableContinuous();$('contents').close();};
-$('start-film').onclick=()=>{if(reduced.matches){models[1].section.scrollIntoView({behavior:'auto'});return;}models.slice(1).forEach(m=>{m.time=0;m.done=false;m.paused=false;m.forceComparison=null;m.step=-1;render(m,true);sync(m);});continuous=true;$('autoplay').checked=true;autoTarget=2;models[1].section.scrollIntoView({behavior:'smooth',block:'start'});};
-// Internal history/hash links preserve each episode's time rather than reversing physiology.
-document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',()=>{if(a.id!=='start-film')disableContinuous();}));
-// A minimal read-only QA surface for deterministic state inspection.
-window.MemoryStory={getState:()=>({active:active?.ep.id,continuous,reduced:reduced.matches,episodes:models.map(m=>({id:m.ep.id,time:m.time,step:m.step,paused:m.paused,done:m.done,ready:m.ready,failed:m.failed}))}),version:'1.0-review'};
+$('film-play').onclick=togglePlayback;
+CHAPTERS.forEach((title,i)=>{const m=models.find(m=>m.ep.chapter===i),a=document.createElement('a');a.href='#episode-'+m.ep.id;a.innerHTML=`<span>${String(i+1).padStart(2,'0')}</span>${escapeHTML(title)}`;$('chapter-links').append(a);});
+$('medical-link').onclick=()=>{$('contents').close();};
+$('start-film').onclick=()=>{pausedByUser=false;goTo(models[1]);models.forEach(sync);};
+// Explicit chapter/next links use the same transport as automatic continuation.
+// A user swipe never toggles playback intent and never requires an extra tap.
+document.querySelectorAll('a[href^="#"]').forEach(a=>a.addEventListener('click',e=>{
+ const target=document.getElementById(a.getAttribute('href').slice(1));
+ const m=models.find(m=>m.section===target)||(target===$('story')?models[0]:null);
+ if(m){e.preventDefault();const fromMenu=!!a.closest('dialog');if($('contents').open)$('contents').close();history.replaceState(null,'','#episode-'+m.ep.id);goTo(m,{smooth:!fromMenu});}
+ else if(target===$('medical')){outsideStory=true;cancelAnimationFrame(raf);raf=0;lastStamp=null;}
+}));
+window.MemoryStory={getState:()=>({active:active?.ep.id,pausedByUser,manualScrolling,navTarget:navTarget?.ep.id,reduced:reduced.matches,episodes:models.map(m=>({id:m.ep.id,time:m.time,step:m.step,paused:m.paused,done:m.done,ready:m.ready,failed:m.failed}))}),version:'1.1-continuous'};
 })();

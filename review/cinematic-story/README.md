@@ -10,7 +10,11 @@ Nine episodes, six chapters, all 17 original semantic frames. Built from the app
 
 ## Interaction
 
-Native vertical scroll, nine stops. Each episode has a finite animation, pause and beat selection. No touch/wheel interception. A dedicated start button opts into continuous progression; manual scrolling, pause, beat selection or hiding the tab cancels continuous progression. Returning to an episode preserves its time. The final state holds without looping. Reduced-motion uses static states, with beat buttons for access to the full explanation.
+Native vertical scroll, nine stops. The story starts automatically and continues to the next episode without extra taps. The opening button only skips the initial hold. A persistent pause button remains accessible above the scene on short phone screens.
+
+Scrolling briefly suspends the clock during the gesture and momentum, then continues from the episode the user chose. A swipe does not disable autoplay. Partially watched episodes resume from their retained time. Returning to a previously finished episode starts that episode again in the forward direction. Explicit pause remains paused across navigation. Comparison controls pause intentionally for inspection; one Resume continues the whole story.
+
+The tab's hidden state and chapter dialog suspend playback without changing the user's play/pause choice. The final state stops without looping. Reduced-motion retains static states and manual navigation. No wheel or touch preventDefault is used.
 
 ## Source frame mapping
 
@@ -35,3 +39,12 @@ Sources are linked in the story: NIH ODS B12, NIA memory and vascular cognition.
 ## Publication boundary
 
 Only `review-oxygen-20261113` is updated. Main, the existing published story and the Pages workflow remain unchanged. All changes are review material.
+
+
+## Saved comparison builds
+
+- Approved oxygen control: commit `f21c6e708cfac954056e995ad07bc9513e25125b`, `review/oxygen-control/index.html`.
+- First complete story: commit `1f330e0614bcf71e64eaae18f35fd92bb1b14203`, `review/cinematic-story/index.html`.
+- Continuous scrolling fix: current branch version.
+
+All previous commits remain available; no history rewrite or main deployment.
