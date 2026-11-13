@@ -19,12 +19,16 @@ jobs:
         run: npm run check:v2
       - name: Install browser test runner
         run: npm install --no-save --package-lock=false playwright@1.62.1
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - name: Browser checks
         run: |
           npm run preview > /tmp/memory-preview.log 2>&1 &
           node --input-type=module -e 'let ready=false;for(let i=0;i<50;i++){try{const r=await fetch("http://127.0.0.1:4173");if(r.ok){ready=true;break;}}catch{}await new Promise(r=>setTimeout(r,200));}if(!ready)throw Error("Preview server did not become ready");'
           npm run test:browser
+      - name: Build and test cinematic mechanisms
+        run: |
+          npm run build:pages
+          node tests/mechanisms.cjs
       - uses: actions/upload-artifact@v4
         with:
           name: memory-review
