@@ -6,7 +6,7 @@ const widths=[320,375,390,430,768,1024,1440];
 (async()=>{
  await fs.mkdir('test-results/mechanisms',{recursive:true});const report=[];
  for(const [engine,type]of [['chromium',chromium],['webkit',webkit]]){
-  const browser=await type.launch();const context=await browser.newContext({viewport:{width:390,height:844},isMobile:engine==='webkit',hasTouch:engine==='webkit'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  const browser=await type.launch(engine==='chromium'&&process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{});const context=await browser.newContext({viewport:{width:390,height:844},isMobile:engine==='webkit',hasTouch:engine==='webkit'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
   page.setDefaultTimeout(15000);console.log('Checking engine',engine);await page.goto(base);await page.waitForFunction(()=>window.MemoryMechanisms);
   for(const width of widths){
    console.log('Checking width',engine,width);await page.setViewportSize({width,height:900});
@@ -22,19 +22,36 @@ const widths=[320,375,390,430,768,1024,1440];
    }
   }
   await page.setViewportSize({width:390,height:844});
-  for(const [topic,step]of [['memory',3],['vessels',2],['vessels',3],['b12',1],['b12',2]]){
-   await page.locator(`.topics a[data-topic=${topic}]`).click();await page.waitForFunction(t=>MemoryMechanisms.getState().topic===t,topic);await page.locator('#steps button').nth(step).click();
-   if(step===3&&topic==='vessels'||step===2&&topic==='b12')await page.locator('#compare').click();
-   await page.locator('#play').click();await page.waitForFunction(()=>document.querySelector('#stage').dataset.complete==='true',{},{timeout:8500});
-   assert.equal(await page.evaluate(()=>MemoryMechanisms.getState().step),step);assert.equal(await page.evaluate(()=>MemoryMechanisms.getState().topic),topic);
-   await page.screenshot({path:`test-results/mechanisms/${engine}-${topic}-${step}.png`,fullPage:true});
+  await page.clock.install();
+  const state=()=>page.evaluate(()=>MemoryMechanisms.getState());
+  const choose=async topic=>{await page.locator(`.topics a[data-topic=${topic}]`).click();await page.waitForFunction(t=>MemoryMechanisms.getState().topic===t,topic);await page.locator('#steps button').first().click();};
+  const advance=async milliseconds=>{await page.clock.runFor(milliseconds);await page.locator('#plate').evaluate(img=>img.decode());};
+  // A topic must not start on load, and a single click must finish all its beats.
+  for(const topic of ['memory','vessels','b12']){
+   console.log('Checking continuous topic',engine,topic);await choose(topic);await advance(10000);assert.equal((await state()).step,0);assert.equal((await state()).tour.active,false);
+   await page.locator('#play').click();
+   const seen=new Set();
+   for(let i=0;i<70;i++){await advance(1000);const s=await state();seen.add(s.step+':'+s.changed);if(s.tour.done)break;}
+   const final=await state();assert.equal(final.tour.done,true);assert.equal(final.topic,topic);assert.equal(final.step,topic==='b12'?2:3);
+   for(let i=0;i<=final.step;i++)assert.ok(seen.has(i+':false'),'Missed stage '+topic+':'+i);
+   if(topic!=='memory'){assert.ok(seen.has(final.step+':true'));assert.equal(await page.locator('#compare').getAttribute('aria-pressed'),'true');}
+   await advance(10000);assert.equal((await state()).topic,topic);assert.equal((await state()).tour.active,false);
+   await page.screenshot({path:`test-results/mechanisms/${engine}-${topic}-continuous.png`,fullPage:true});
   }
-  await page.locator('.topics a[data-topic=memory]').click();await page.waitForFunction(()=>MemoryMechanisms.getState().topic==='memory');await page.locator('#play').click();await page.locator('.topics a[data-topic=b12]').click();await page.waitForFunction(()=>MemoryMechanisms.getState().topic==='b12');await page.waitForTimeout(3900);assert.equal(await page.evaluate(()=>MemoryMechanisms.getState().topic),'b12');assert.equal(await page.locator('#stage').getAttribute('data-complete'),'false');
-  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#steps button').nth(1).click();await page.locator('#play').click();assert.equal(await page.locator('#stage').getAttribute('data-complete'),'true');
-  await page.locator('#reset').click();assert.equal(await page.locator('#stage').getAttribute('data-complete'),'false');
+  // Pause must freeze both the signal and the wait before the next stage.
+  await choose('memory');await page.locator('#play').click();await advance(1000);await page.locator('#play').click();
+  const frozen=await page.locator('#moving-marks').innerHTML();await advance(12000);assert.equal((await state()).step,0);assert.equal(await page.locator('#moving-marks').innerHTML(),frozen);assert.equal((await state()).tour.paused,true);
+  await page.locator('#play').click();await advance(3500);assert.equal((await state()).completed,true);await page.locator('#play').click();await advance(10000);assert.equal((await state()).step,0);await page.locator('#play').click();await advance(3500);assert.equal((await state()).step,1);
+  // Manual navigation cancels queued transitions, including a crossfade.
+  await page.locator('#steps button').nth(2).click();await advance(12000);assert.equal((await state()).step,2);assert.equal((await state()).tour.active,false);
+  await page.locator('#play').click();await choose('b12');await advance(12000);assert.equal((await state()).topic,'b12');assert.equal((await state()).step,0);assert.equal((await state()).tour.active,false);
+  await page.emulateMedia({reducedMotion:'reduce'});await page.locator('#play').click();assert.equal(await page.locator('#stage').getAttribute('data-complete'),'true');
+  await page.locator('#play').click();await advance(8000);assert.equal((await state()).step,0);
+  await page.locator('#reset').click();assert.equal(await page.locator('#stage').getAttribute('data-complete'),'false');assert.equal((await state()).tour.active,false);
   assert.deepEqual(errors,[]);await browser.close();
  }
  await fs.writeFile('test-results/mechanisms/report.json',JSON.stringify(report,null,2));
  const failures=report.filter(r=>r.overflow||!r.image||r.labels.some(l=>!l.fits));assert.deepEqual(failures,[]);
- console.log(`PASS: ${report.length} layout cases across Chromium and WebKit, image comparisons, finite animations, cancellation, reduced motion and reset.`);
+ console.log(`PASS: ${report.length} layout cases across Chromium and WebKit, image comparisons, single-click topic sequences, automatic comparisons, pause/resume, manual cancellation, reduced motion and reset.`);
 })().catch(e=>{console.error(e);process.exit(1);});
+

@@ -1,16 +1,59 @@
-import {topics} from './data.js?v=1';
+import {topics} from './data.js?v=2';
 const $=id=>document.getElementById(id),ns='http://www.w3.org/2000/svg',order=Object.keys(topics);
 const state={topic:'memory',step:0,changed:false,running:false,completed:false};
-let frame=0,timer=0,renderToken=0;
+let frame=0,renderToken=0,clock=null;
+const tour={active:false,paused:false,done:false};
+function syncTransport(){
+ $('play-label').textContent=tour.active?(tour.paused?'Продолжить':'Пауза'):tour.done?'Посмотреть тему ещё раз':state.step?'Смотреть отсюда':'Смотреть тему';
+ $('play-icon').textContent=tour.active&&!tour.paused?'Ⅱ':'▷';
+ $('play').setAttribute('aria-pressed',String(tour.active&&!tour.paused));
+ $('tour-note').textContent=tour.active?(tour.paused?'На паузе. Можно рассмотреть детали.':`${current().tab} · этапы сменяются сами`):tour.done?topics[state.topic].bridge:'Одно нажатие: вся тема, включая сравнения.';
+ $('stage').classList.toggle('is-paused',tour.paused);document.querySelector('.scene').classList.toggle('is-paused',tour.paused);
+}
+// A single pausable clock owns motion, reading holds and crossfades.
+function timed(duration,paint,done){
+ cancelAnimationFrame(frame);clock={duration,paint,done,elapsed:0,last:performance.now()};
+ const tick=now=>{if(!clock||tour.paused)return;const c=clock;c.elapsed+=now-c.last;c.last=now;const p=Math.min(c.elapsed/c.duration,1);c.paint(p);if(p>=1){clock=null;c.done();}else frame=requestAnimationFrame(tick);};
+ clock.tick=tick;if(!tour.paused)frame=requestAnimationFrame(tick);
+}
+function pauseTour(){if(!tour.active||tour.paused)return;tour.paused=true;cancelAnimationFrame(frame);syncTransport();}
+function stopTour(){tour.active=false;tour.paused=false;tour.done=false;stop();$('stage').querySelector('.transition-frame')?.remove();syncTransport();}
+function crossfade(){
+ if(reduce())return null;
+ $('stage').querySelector('.transition-frame')?.remove();
+ const shell=document.createElement('div');shell.className='transition-frame';shell.setAttribute('aria-hidden','true');shell.inert=true;
+ const copy=$('world').cloneNode(true);copy.removeAttribute('id');copy.querySelectorAll('[id]').forEach(n=>n.removeAttribute('id'));copy.querySelectorAll('button').forEach(b=>b.tabIndex=-1);
+ // Keep the old comparison visible while the underlying scene changes.
+ copy.querySelector('.changed').style.opacity=state.changed?'1':'0';shell.append(copy);$('stage').append(shell);return shell;
+}
+function nextBeat(){
+ if(!tour.active)return;
+ if(!(current().changed&&!state.changed)&&state.step===topics[state.topic].steps.length-1){tour.active=false;tour.done=true;syncTransport();return;}
+ const old=crossfade();
+ if(current().changed&&!state.changed)state.changed=true;else{state.step++;state.changed=false;}
+ render({automatic:true});
+ const token=renderToken;
+ // Decode before fading so slower connections never expose an empty plate.
+ Promise.allSettled([$('plate').decode(),$('changed-plate').hidden?Promise.resolve():$('changed-plate').decode()]).then(()=>{
+  if(token!==renderToken||!tour.active){old?.remove();return;}
+  timed(reduce()?1:850,p=>{if(old)old.style.opacity=String(1-p);},()=>{old?.remove();run();});
+ });
+}
+function toggleTour(){
+ if(tour.active){if(tour.paused){tour.paused=false;if(clock){clock.last=performance.now();frame=requestAnimationFrame(clock.tick);}syncTransport();}else pauseTour();return;}
+ if(tour.done){state.step=0;state.changed=false;render();}
+ tour.active=true;tour.paused=false;tour.done=false;syncTransport();
+ $('stage').scrollIntoView({behavior:reduce()?'auto':'smooth',block:'start'});run();
+}
 const reduce=()=>matchMedia('(prefers-reduced-motion: reduce)').matches;
 const current=()=>topics[state.topic].steps[state.step];
 function node(tag,attrs={},parent=$('static-marks')){const e=document.createElementNS(ns,tag);for(const[k,v]of Object.entries(attrs))e.setAttribute(k,String(v));parent.append(e);return e;}
-function stop(){cancelAnimationFrame(frame);clearTimeout(timer);state.running=false;$('stage').dataset.running='false';$('stage').classList.remove('is-running');}
+function stop(){cancelAnimationFrame(frame);clock=null;state.running=false;$('stage').dataset.running='false';$('stage').classList.remove('is-running');}
 function setCopy(title,copy){$('detail-title').textContent=title;$('detail-copy').textContent=copy;}
 function ring(x,y,r=65,opacity=.8){return node('circle',{cx:x,cy:y,r,fill:'none',stroke:'#fff2cd','stroke-width':2,opacity});}
 function glow(x,y,r=115,opacity=.55,parent=$('static-marks')){return node('circle',{cx:x,cy:y,r,fill:'url(#halo)',opacity},parent);}
 function path(d,attrs={}){return node('path',{d,fill:'none',stroke:'#fff0c6','stroke-width':2,...attrs});}
-function label(text,x,y,cx,cy,title,copy,mobileX=x){const b=document.createElement('button');b.className='label';b.style.left=(matchMedia('(max-width:600px)').matches?mobileX:x)+'%';b.style.top=y+'%';b.innerHTML=text+' <b aria-hidden="true">+</b>';b.setAttribute('aria-pressed','false');b.dataset.x=x;b.dataset.mx=mobileX;b.onclick=()=>{stop();$('labels').querySelectorAll('button').forEach(el=>el.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');$('static-marks').querySelector('.selected-ring')?.remove();const mark=ring(cx,cy,65,1);mark.classList.add('selected-ring');setCopy(title,copy);$('reset').hidden=false;$('play-label').textContent=current().play;};$('labels').append(b);}
+function label(text,x,y,cx,cy,title,copy,mobileX=x){const b=document.createElement('button');b.className='label';b.style.left=(matchMedia('(max-width:600px)').matches?mobileX:x)+'%';b.style.top=y+'%';b.innerHTML=text+' <b aria-hidden="true">+</b>';b.setAttribute('aria-pressed','false');b.dataset.x=x;b.dataset.mx=mobileX;b.onclick=()=>{stopTour();$('labels').querySelectorAll('button').forEach(el=>el.setAttribute('aria-pressed','false'));b.setAttribute('aria-pressed','true');$('static-marks').querySelector('.selected-ring')?.remove();const mark=ring(cx,cy,65,1);mark.classList.add('selected-ring');setCopy(title,copy);$('reset').hidden=false;syncTransport();};$('labels').append(b);}
 function src(s,changed=false){return s.external?'../vascular/assets/microvascular.webp':'assets/'+(changed?s.changed:s.image)+'.webp';}
 const memoryPoints=[[770,370],[1135,165],[1400,360],[1175,540]];
 function drawStatic(){
@@ -36,9 +79,10 @@ function drawStatic(){
   if(state.changed)ring(1000,410,85,.85);
  }
 }
-function render({focus=false}={}){
- stop();renderToken++;state.completed=false;const topic=topics[state.topic],s=current();
- $('stage').dataset.topic=state.topic;$('stage').dataset.mode=s.mode;$('stage').dataset.step=state.step;$('stage').dataset.running='false';$('stage').dataset.complete='false';$('stage').classList.toggle('is-changed',state.changed);$('stage').classList.remove('is-complete');
+function render({focus=false,automatic=false}={}){
+ if(automatic)stop();else stopTour();renderToken++;state.completed=false;const topic=topics[state.topic],s=current();
+ document.querySelector('.scene').dataset.topic=state.topic;$('stage').dataset.topic=state.topic;$('stage').dataset.mode=s.mode;$('stage').dataset.step=state.step;$('stage').dataset.running='false';$('stage').dataset.complete='false';$('stage').classList.toggle('is-changed',state.changed);$('stage').classList.remove('is-complete');
+ const intro=document.querySelector('.intro');intro.classList.remove('is-entering');if(automatic&&!reduce()){void intro.offsetWidth;intro.classList.add('is-entering');}
  $('eyebrow').textContent=topic.number+' / '+topic.name;$('scene-title').innerHTML=s.title;$('intro-copy').textContent=s.intro;
  $('plate').src=src(s);$('plate').alt=state.topic==='memory'?'Учебная иллюстрация мозга и условное участие областей в работе памяти.':state.topic==='b12'?'Непрерывный аксон, сегменты миелина и промежутки между ними.':'Учебная иллюстрация: '+s.tab+'.';
  $('changed-plate').src=src(s,!!s.changed);$('changed-plate').hidden=!s.changed;
@@ -54,28 +98,30 @@ function render({focus=false}={}){
  document.querySelectorAll('[data-topic]').forEach(el=>{if(el.matches('.topics a')){if(el.dataset.topic===state.topic)el.setAttribute('aria-current','page');else el.removeAttribute('aria-current');}});
  $('previous').disabled=state.topic==='memory'&&state.step===0;$('chapter-count').textContent=topic.number+' / 03';$('next').textContent=state.step<topic.steps.length-1?'Дальше: '+topic.steps[state.step+1].tab+' →':topic.next+' →';
  $('medical-note').textContent=topic.note;$('sources').replaceChildren();for(const[name,url]of topic.sources){const a=document.createElement('a');a.textContent=name;a.href=url;a.target='_blank';a.rel='noopener noreferrer';$('sources').append(a);}
- $('takeaway').hidden=state.topic!=='b12'||state.step!==2;drawStatic();
+ $('takeaway').hidden=state.topic!=='b12'||state.step!==2;drawStatic();syncTransport();
  if(focus){$('scene-title').focus({preventScroll:true});$('main').scrollIntoView({behavior:'auto',block:'start'});}
 }
 function selectStep(i,focus=false){state.step=i;state.changed=false;render({focus});}
 function selectTopic(id,focus=false){if(!topics[id])id='memory';state.topic=id;state.step=0;state.changed=false;render({focus});}
 function finish(){
- stop();state.completed=true;const s=current();$('stage').dataset.running='false';$('stage').dataset.complete='true';$('stage').classList.add('is-complete');$('play-label').textContent='Посмотреть ещё раз';$('reset').hidden=false;
+ stop();state.completed=true;const s=current();$('stage').dataset.running='false';$('stage').dataset.complete='true';$('stage').classList.add('is-complete');syncTransport();$('reset').hidden=false;
  setCopy(state.changed?s.changedEnd:s.endTitle,state.changed?s.changedEndCopy:s.endCopy);
  if(state.topic==='memory'){
   const msg=['Слова услышаны','Завтра · 10:00 · парк','Детали связаны','Завтра в 10, у входа в парк'][state.step];$('scene-message').textContent=msg;$('scene-message').hidden=false;
   if(state.step===3){$('quote').textContent='«Завтра в 10, у входа в парк». ';$('life-note').textContent='Подсказка помогла вернуться к договорённости.';}
  }
+ if(tour.active)timed(3400,()=>{},nextBeat);
+ syncTransport();
 }
 function run(){
- const s=current();if(s.mode==='network'){selectStep(2);return;}if(state.running){finish();return;}
- stop();drawStatic();$('scene-message').hidden=true;state.running=true;state.completed=false;$('stage').dataset.running='true';$('stage').dataset.complete='false';$('stage').classList.add('is-running');$('stage').classList.remove('is-complete');$('play-label').textContent='Показать итог';$('reset').hidden=false;
+ const s=current();
+ stop();drawStatic();$('scene-message').hidden=true;state.running=true;state.completed=false;$('stage').dataset.running='true';$('stage').dataset.complete='false';$('stage').classList.add('is-running');$('stage').classList.remove('is-complete');syncTransport();$('reset').hidden=false;
  setCopy(state.changed?s.changedHeading:s.heading,state.changed?s.changedCopy:s.copy);
- const layer=$('moving-marks'),duration=state.topic==='b12'?(state.changed?5700:3400):state.topic==='memory'?3600:5200;
+ const layer=$('moving-marks'),duration=state.topic==='b12'?(state.changed?5700:3400):state.topic==='memory'?4200:s.mode==='network'?2800:5200;
  let routes=[];
  if(state.topic==='memory'){
   routes=[path(state.step===0?'M590 435 Q690 400 770 370':state.step===1?'M770 370 Q900 240 1135 165':'M770 370 Q900 240 1135 165 Q1390 160 1400 360 Q1410 540 1175 540 Q960 590 770 370',{opacity:.65,'stroke-width':3})];
- }else if(s.mode==='brainSupply'){routes=[path('M1110 685 Q995 560 1020 430 Q1120 300 1275 210',{opacity:.45,'stroke-width':3})];}
+ }else if(s.mode==='brainSupply'||s.mode==='network'){routes=[path('M1110 685 Q995 560 1020 430 Q1120 300 1275 210',{opacity:.45,'stroke-width':3})];}
  else if(s.mode==='oxygen'){
   routes=['M810 480 Q955 490 1060 520 T1250 485','M860 415 Q1020 425 1115 440 T1250 460','M770 560 Q875 660 1025 645 T1195 600'].map(d=>path(d,{opacity:.35,'stroke-dasharray':'3 10'}));
  }else if(s.mode==='smallVessel'){routes=[path('M320 770 C575 625 895 475 1195 270',{opacity:.15,'stroke-width':3})];}
@@ -92,16 +138,17 @@ function run(){
  }
  const done=()=>{if(token!==renderToken)return;paint(1);finish();};
  if(reduce()){paint(1);done();return;}
- timer=setTimeout(done,duration);const start=performance.now();function tick(now){if(!state.running||token!==renderToken)return;const p=Math.min((now-start)/duration,1);paint(p);if(p>=1){done();return;}frame=requestAnimationFrame(tick);}frame=requestAnimationFrame(tick);
+ timed(duration,paint,done);
 }
-$('play').addEventListener('click',run);
+$('play').addEventListener('click',toggleTour);
 $('compare').addEventListener('click',()=>{state.changed=!state.changed;render();$('reset').hidden=false;});
 $('reset').addEventListener('click',()=>{state.changed=false;render();});
 $('next').addEventListener('click',()=>{if(state.step<topics[state.topic].steps.length-1)selectStep(state.step+1,true);else location.hash=order[(order.indexOf(state.topic)+1)%order.length];});
 $('previous').addEventListener('click',()=>{if(state.step>0)selectStep(state.step-1,true);else{const n=order.indexOf(state.topic);if(n>0)location.hash=order[n-1];}});
 window.addEventListener('hashchange',()=>selectTopic(location.hash.slice(1),true));
-document.addEventListener('visibilitychange',()=>{if(document.hidden&&state.running)finish();});
-matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',e=>{if(e.matches&&state.running)finish();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pauseTour();});
+matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change',e=>{if(e.matches)pauseTour();});
 window.addEventListener('resize',()=>document.querySelectorAll('.label').forEach(b=>b.style.left=(matchMedia('(max-width:600px)').matches?b.dataset.mx:b.dataset.x)+'%'));
 selectTopic(location.hash.slice(1));
-window.MemoryMechanisms={getState:()=>({...state}),topics:order};
+window.MemoryMechanisms={getState:()=>({...state,tour:{...tour}}),topics:order};
+
